@@ -4,5 +4,5 @@
 /Documentation/
 *.g_c
 *.g_x
-ProjectInfor.xml
+ProjectInfo.xml
 .cwGeneratedFileSetLog
