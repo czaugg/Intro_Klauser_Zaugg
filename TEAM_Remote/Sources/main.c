@@ -97,7 +97,7 @@
 #include "IO_Map.h"
 /* User includes (#include below this line is not maintained by Processor Expert) */
 #include "Application.h"
-
+#include "LED.h"
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 int main(void)
 /*lint -restore Enable MISRA rule (6.3) checking. */
@@ -109,7 +109,13 @@ int main(void)
   /*** End of Processor Expert internal initialization.                    ***/
 
   /* Write your code here */
-  APP_Start();
+  //APP_Start();
+  while(1){
+	  LED_On(1);
+	  WAIT1_Waitms(500);
+	  LED_Off(1);
+	  WAIT1_Waitms(500);
+  }
   /* For example: for(;;) { } */
 
   /*** Don't write any code pass this line, or it will be deleted during code generation. ***/
