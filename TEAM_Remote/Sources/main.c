@@ -111,10 +111,17 @@ int main(void)
   /* Write your code here */
   //APP_Start();
   while(1){
+<<<<<<< HEAD
 	  WAIT1_Waitms(1000);
 	  LED_On(1);
 	  WAIT1_Waitms(1000);
 	  LED_Off(1);
+=======
+	  LED_On(1);
+	  WAIT1_Waitms(500);
+	  LED_Off(1);
+	  WAIT1_Waitms(500);
+>>>>>>> origin/master
   }
   /* For example: for(;;) { } */
 

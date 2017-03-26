@@ -45,15 +45,26 @@
 
 #if PL_CONFIG_HAS_EVENTS
 void APP_EventHandler(EVNT_Handle event) {
-  /*! \todo handle events */
-  switch(event) {
-  case EVNT_STARTUP:
-    break;
-  default:
-    break;
-   } /* switch */
-}
-#endif /* PL_CONFIG_HAS_EVENTS */
+	  /*! \todo handle events */
+	  switch(event) {
+	  case EVNT_STARTUP:
+	    {
+	      int i;
+	      for (i=0;i<5;i++) {
+	        LED1_Neg();
+	        WAIT1_Waitms(500);
+	      }
+	      LED2_Off();
+	    }
+	    break;
+	  case EVNT_LED_HEARTBEAT:
+	    LED2_Neg();
+	    break;
+	  default:
+	    break;
+	   } /* switch */
+	}
+	#endif /* PL_CONFIG_HAS_EVENTS */
 
 static const KIN1_UID RoboIDs[] = {
   /* 0: L20, V2 */ {{0x00,0x03,0x00,0x00,0x67,0xCD,0xB7,0x21,0x4E,0x45,0x32,0x15,0x30,0x02,0x00,0x13}},
