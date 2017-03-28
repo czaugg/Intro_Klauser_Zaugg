@@ -9,6 +9,7 @@
 #include "Platform.h"
 #include "Application.h"
 #include "Event.h"
+#include "WAIT1.h"
 #include "LED.h"
 #include "WAIT1.h"
 #include "CS1.h"
@@ -18,6 +19,7 @@
 #if PL_CONFIG_HAS_SHELL
   #include "CLS1.h"
   #include "Shell.h"
+
 #endif
 #if PL_CONFIG_HAS_BUZZER
   #include "Buzzer.h"
@@ -46,6 +48,7 @@
 #if PL_CONFIG_HAS_EVENTS
 
 void APP_EventHandler(EVNT_Handle event) {
+
   /*! \todo handle events */
 	//LED_Off(1);
 
@@ -78,6 +81,7 @@ void APP_EventHandler(EVNT_Handle event) {
    } /* switch */
 }
 #endif /* PL_CONFIG_HAS_EVENTS */
+
 
 static const KIN1_UID RoboIDs[] = {
   /* 0: L20, V2 */ {{0x00,0x03,0x00,0x00,0x67,0xCD,0xB7,0x21,0x4E,0x45,0x32,0x15,0x30,0x02,0x00,0x13}},
@@ -155,9 +159,17 @@ void APP_Start(void) {
   vTaskStartScheduler(); /* start the RTOS, create the IDLE task and run my tasks (if any) */
   /* does usually not return! */
 #else
+  //__asm volatile("cpsie i"); /* enable Interrupts*/
 #if PL_CONFIG_HAS_EVENTS
   EVNT_SetEvent(EVNT_STARTUP);
+  __asm volatile("cpsie i");
+  for(;;){
+	  KEY_Scan();
+	  EVNT_HandleEvent(APP_EventHandler,TRUE);
+
+  }
 #endif
+
   __asm volatile("cpsie i");
 
   SHELL_Init();
@@ -173,6 +185,7 @@ void APP_Start(void) {
 	LED_Neg(1);
     WAIT1_Waitms(500); /* just wait for some arbitrary time .... */
     EVNT_HandleEvent(APP_EventHandler, TRUE);
+
   }
 #endif
 }

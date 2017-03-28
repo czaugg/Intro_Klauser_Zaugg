@@ -30,11 +30,11 @@
 
 /* set of defines to disable a functionality: if it is defined, it will disable it in the common part */
 //#define PL_LOCAL_CONFIG_HAS_LEDS_DISABLED                 /* disable LEDs */
-#define PL_LOCAL_CONFIG_HAS_EVENTS_DISABLED               /* disable events */
-#define PL_LOCAL_CONFIG_HAS_TIMER_DISABLED                /* disable own timer */
-#define PL_LOCAL_CONFIG_HAS_SHELL_DISABLED                /* disable shell */
-#define PL_LOCAL_CONFIG_HAS_KEYS_DISABLED                 /* disable key/push buttons */
-#define PL_LOCAL_CONFIG_HAS_TRIGGER_DISABLED              /* disable triggers */
+//#define PL_LOCAL_CONFIG_HAS_EVENTS_DISABLED               /* disable events */
+//#define PL_LOCAL_CONFIG_HAS_TIMER_DISABLED                /* disable own timer */
+//#define PL_LOCAL_CONFIG_HAS_SHELL_DISABLED                /* disable shell */
+//#define PL_LOCAL_CONFIG_HAS_KEYS_DISABLED                 /* disable key/push buttons */
+//#define PL_LOCAL_CONFIG_HAS_TRIGGER_DISABLED              /* disable triggers */
 #define PL_LOCAL_CONFIG_HAS_DEBOUNCE_DISABLED             /* disable debouncing */
 #define PL_LOCAL_CONFIG_HAS_RTOS_DISABLED                 /* disable RTOS usage */
 #define PL_LOCAL_CONFIG_HAS_SEGGER_RTT_DISABLED           /* disable Segger RTT */
@@ -54,7 +54,7 @@
 #define PL_LOCAL_CONFIG_HAS_LCD_MENU_DISABLED             /* disable LCD menu */
 
 /* robot hardware functionality */
-#define PL_LOCAL_CONFIG_HAS_BUZZER_DISABLED               /* disable buzzer (only on robot) */
+//#define PL_LOCAL_CONFIG_HAS_BUZZER_DISABLED               /* disable buzzer (only on robot) */
 #define PL_LOCAL_CONFIG_HAS_REFLECTANCE_DISABLED          /* disable IR reflectance sensor */
 #define PL_LOCAL_CONFIG_HAS_BLUETOOTH_DISABLED            /* disable Bluetooth */
 #define PL_LOCAL_CONFIG_HAS_MOTOR_DISABLED                /* disable motor */
