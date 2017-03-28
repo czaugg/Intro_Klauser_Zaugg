@@ -35,6 +35,9 @@
 #include "MCUC1.h"
 #include "LEDPin1.h"
 #include "BitIoLdd17.h"
+#include "TI1.h"
+#include "TimerIntLdd1.h"
+#include "TU1.h"
 #include "WAIT1.h"
 #include "UTIL1.h"
 #include "KIN1.h"
@@ -98,6 +101,13 @@
 /* User includes (#include below this line is not maintained by Processor Expert) */
 #include "Application.h"
 #include "LED.h"
+
+void (*f)(void) = NULL;
+void cause_hard_fault(void) {
+  f(); /* will cause a hard fault, as the function pointer is NULL */
+}
+
+
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 int main(void)
 /*lint -restore Enable MISRA rule (6.3) checking. */
@@ -109,13 +119,14 @@ int main(void)
   /*** End of Processor Expert internal initialization.                    ***/
 
   /* Write your code here */
-  //APP_Start();
-  while(1){
-	  LED_On(1);
-	  WAIT1_Waitms(500);
-	  LED_Off(1);
-	  WAIT1_Waitms(500);
-  }
+  APP_Start();
+  //cause_hard_fault();
+  //while(1){
+  //  LED_On(1);
+//	  WAIT1_Waitms(500);
+//	  LED_Off(1);
+//	  WAIT1_Waitms(500);
+//  }
   /* For example: for(;;) { } */
 
   /*** Don't write any code pass this line, or it will be deleted during code generation. ***/
