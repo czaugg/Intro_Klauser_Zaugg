@@ -51,6 +51,9 @@ static bool CheckCallbacks(void) {
       /* reset trigger structure, as callback might setup this trigger again */
       TRG_Triggers[i].callback = NULL; /* NULL callback prevents that we are called again */
       CS1_ExitCritical();
+      // Nicht in kritische sektion weil wir nicht wissen wieviel Zeit der Callback braucht.. Deshalb
+      // soll der Interrupt nur solange unterbrochen werden wie er auch muss. Aufgerufene Funktion ist
+      // Selber verantwortlich für die Kritische Sektion.
       callback(data);
       calledCallBack = TRUE; /* callback may have set a trigger at the current time: rescan trigger list */
     } else {

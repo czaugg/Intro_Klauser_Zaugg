@@ -9,6 +9,7 @@
 #include "Platform.h"
 #include "Application.h"
 #include "Event.h"
+#include "WAIT1.h"
 #include "LED.h"
 #include "WAIT1.h"
 #include "CS1.h"
@@ -18,6 +19,7 @@
 #if PL_CONFIG_HAS_SHELL
   #include "CLS1.h"
   #include "Shell.h"
+
 #endif
 #if PL_CONFIG_HAS_BUZZER
   #include "Buzzer.h"
@@ -47,21 +49,8 @@
 void APP_EventHandler(EVNT_Handle event) {
 	  /*! \todo handle events */
 	  switch(event) {
-	  case EVNT_STARTUP:
-	    {
-	      int i;
-	      for (i=0;i<5;i++) {
-	        LED1_Neg();
-	        WAIT1_Waitms(500);
-	      }
-	      LED2_Off();
-	    }
-	    break;
-	  case EVNT_LED_HEARTBEAT:
-	    LED2_Neg();
-	    break;
-	  default:
-	    break;
+	  case EVNT_SW1_PRESSED:
+		  LED1_Neg();
 	   } /* switch */
 	}
 	#endif /* PL_CONFIG_HAS_EVENTS */
@@ -141,12 +130,28 @@ void APP_Start(void) {
   vTaskStartScheduler(); /* start the RTOS, create the IDLE task and run my tasks (if any) */
   /* does usually not return! */
 #else
-  __asm volatile("cpsie i"); /* enable Interrupts*/
+  //__asm volatile("cpsie i"); /* enable Interrupts*/
 #if PL_CONFIG_HAS_EVENTS
   EVNT_SetEvent(EVNT_STARTUP);
+  __asm volatile("cpsie i");
+  for(;;){
+	  KEY_Scan();
+	  EVNT_HandleEvent(APP_EventHandler,TRUE);
+
+  }
 #endif
+
+  int cntr = 0;
   for(;;) {
+	  CLS1_SendStr("Hello ",CLS1_GetStdio()->stdOut);
+	  CLS1_SendNum32s(cntr,CLS1_GetStdio()->stdOut);
+	  CLS1_SendStr("\r\n",CLS1_GetStdio()->stdOut);
+	  cntr++;
     WAIT1_Waitms(25); /* just wait for some arbitrary time .... */
+   KEY_Scan();
+    EVNT_HandleEvent(APP_EventHandler,TRUE);
+
+
   }
 #endif
 }
