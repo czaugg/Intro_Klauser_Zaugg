@@ -52,11 +52,7 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Generated_Code&quot;"/>
 									<listOptionValue builtIn="false" value="../../TEAM_Common"/>
 								</option>
-<<<<<<< HEAD
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.preprocessonly.632515855" name="Preprocess only (-E)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.preprocessonly" useByScannerDiscovery="false" value="false" valueType="boolean"/>
-=======
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.preprocessonly.970916648" name="Preprocess only (-E)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.preprocessonly" useByScannerDiscovery="false" value="false" valueType="boolean"/>
->>>>>>> origin/master
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.2117394771" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1359487904" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler">
