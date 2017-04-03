@@ -48,9 +48,7 @@
 void APP_EventHandler(EVNT_Handle event) {
 
 
-  /*! \todo handle events */
-	//LED_Off(1);
-
+#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
   switch(event) {
   case EVNT_STARTUP:
     break;
@@ -79,6 +77,9 @@ void APP_EventHandler(EVNT_Handle event) {
   default:
     break;
    } /* switch */
+
+#endif
+
 }
 #endif /* PL_CONFIG_HAS_EVENTS */
 
