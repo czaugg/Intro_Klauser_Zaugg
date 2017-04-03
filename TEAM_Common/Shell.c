@@ -7,7 +7,6 @@
  */
 
 #include "Platform.h"
-
 #if PL_CONFIG_HAS_SHELL
 #include "Shell.h"
 #include "CLS1.h"
@@ -95,14 +94,14 @@
  /* ******************************************************************
   * UART Standard I/O
   * ******************************************************************/
-#include "AS1.h"
+  #include "AS1.h"
+
   static bool UART_KeyPressed(void) {
     return AS1_GetCharsInRxBuf()!=0;
   }
 
   static void UART_SendChar(uint8_t ch) {
     CLS1_SendCharFct(ch, AS1_SendChar);
-
   }
 
   static void UART_ReceiveChar(uint8_t *p) {

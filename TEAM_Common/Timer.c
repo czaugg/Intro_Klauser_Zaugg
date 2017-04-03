@@ -35,6 +35,12 @@ void TMR_OnInterrupt(void) {
 
   /* this one gets called from an interrupt!!!! */
   /*! \todo Add code for a blinking LED here */
+	static unsigned int cntr = 0;
+	cntr++;
+	if (cntr > 100){
+		EVNT_SetEvent(EVNT_TMR_OVERFLOW);
+		cntr = 0;
+	}
 }
 
 void TMR_Init(void) {

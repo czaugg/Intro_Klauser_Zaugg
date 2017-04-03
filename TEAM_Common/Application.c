@@ -44,11 +44,38 @@
 #endif
 
 #if PL_CONFIG_HAS_EVENTS
+
 void APP_EventHandler(EVNT_Handle event) {
+
+
   /*! \todo handle events */
+	//LED_Off(1);
+
   switch(event) {
   case EVNT_STARTUP:
     break;
+  case EVNT_SW1_PRESSED:
+	  CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+  case EVNT_SW2_PRESSED:
+	  CLS1_SendStr("SW2 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+  case EVNT_SW3_PRESSED:
+	  CLS1_SendStr("SW3 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+  case EVNT_SW4_PRESSED:
+	  CLS1_SendStr("SW4 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+  case EVNT_SW5_PRESSED:
+	  CLS1_SendStr("SW5 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+  case EVNT_SW6_PRESSED:
+	  CLS1_SendStr("SW6 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+  case EVNT_SW7_PRESSED:
+	  CLS1_SendStr("SW7 pressed!\n", CLS1_GetStdio()->stdOut);
+	  break;
+
   default:
     break;
    } /* switch */
@@ -129,11 +156,38 @@ void APP_Start(void) {
 #endif
   APP_AdoptToHardware();
 #if PL_CONFIG_HAS_RTOS
+
   vTaskStartScheduler(); /* start the RTOS, create the IDLE task and run my tasks (if any) */
   /* does usually not return! */
 #else
+
+  //__asm volatile("cpsie i"); /* enable Interrupts*/
+#if PL_CONFIG_HAS_EVENTS
+  EVNT_SetEvent(EVNT_STARTUP);
+  __asm volatile("cpsie i");
+  for(;;){
+	  KEY_Scan();
+	  EVNT_HandleEvent(APP_EventHandler,TRUE);
+
+  }
+#endif
+
+  __asm volatile("cpsie i");
+
+  SHELL_Init();
+  int counter = 0;
   for(;;) {
-    WAIT1_Waitms(25); /* just wait for some arbitrary time .... */
+
+	KEY_Scan();
+
+	counter++;
+	CLS1_SendStr("Hello World: ", CLS1_GetStdio()->stdOut);
+	CLS1_SendNum32s(counter, CLS1_GetStdio()->stdOut);
+	CLS1_SendStr("\n", CLS1_GetStdio()->stdOut);
+	LED_Neg(1);
+    WAIT1_Waitms(500); /* just wait for some arbitrary time .... */
+    EVNT_HandleEvent(APP_EventHandler, TRUE);
+
   }
 #endif
 }
