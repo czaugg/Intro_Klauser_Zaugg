@@ -174,10 +174,16 @@ void APP_Start(void) {
 
   __asm volatile("cpsie i");
 
+#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
   SHELL_Init();
   int counter = 0;
+#endif
+
+
   for(;;) {
 
+
+#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
 	KEY_Scan();
 
 	counter++;
@@ -187,6 +193,8 @@ void APP_Start(void) {
 	LED_Neg(1);
     WAIT1_Waitms(500); /* just wait for some arbitrary time .... */
     EVNT_HandleEvent(APP_EventHandler, TRUE);
+#endif
+
 
   }
 #endif
