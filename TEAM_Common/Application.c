@@ -9,7 +9,6 @@
 #include "Platform.h"
 #include "Application.h"
 #include "Event.h"
-#include "WAIT1.h"
 #include "LED.h"
 #include "WAIT1.h"
 #include "CS1.h"
@@ -19,7 +18,6 @@
 #if PL_CONFIG_HAS_SHELL
   #include "CLS1.h"
   #include "Shell.h"
-
 #endif
 #if PL_CONFIG_HAS_BUZZER
   #include "Buzzer.h"
@@ -47,14 +45,17 @@
 
 #if PL_CONFIG_HAS_EVENTS
 void APP_EventHandler(EVNT_Handle event) {
-	  /*! \todo handle events */
-	  switch(event) {
-	  case EVNT_SW1_PRESSED:
-		  LED1_Neg();
-	   } /* switch */
-	}
-	#endif /* PL_CONFIG_HAS_EVENTS */
+  /*! \todo handle events */
+  switch(event) {
+  case EVNT_STARTUP:
+    break;
+  default:
+    break;
+   } /* switch */
+}
+#endif /* PL_CONFIG_HAS_EVENTS */
 
+#if PL_CONFIG_HAS_MOTOR /* currently only used for robots */
 static const KIN1_UID RoboIDs[] = {
   /* 0: L20, V2 */ {{0x00,0x03,0x00,0x00,0x67,0xCD,0xB7,0x21,0x4E,0x45,0x32,0x15,0x30,0x02,0x00,0x13}},
   /* 1: L21, V2 */ {{0x00,0x05,0x00,0x00,0x4E,0x45,0xB7,0x21,0x4E,0x45,0x32,0x15,0x30,0x02,0x00,0x13}},
@@ -63,6 +64,7 @@ static const KIN1_UID RoboIDs[] = {
   /* 4: L11, V2 */ {{0x00,0x19,0x00,0x00,0x67,0xCD,0xB9,0x11,0x4E,0x45,0x32,0x15,0x30,0x02,0x00,0x13}}, /* revert right encoder, possible damaged motor driver? */
   /* 5: L4, V1 */  {{0x00,0x0B,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x4E,0x45,0x27,0x99,0x10,0x02,0x00,0x24}},
 };
+#endif
 
 static void APP_AdoptToHardware(void) {
   KIN1_UID id;
@@ -130,28 +132,8 @@ void APP_Start(void) {
   vTaskStartScheduler(); /* start the RTOS, create the IDLE task and run my tasks (if any) */
   /* does usually not return! */
 #else
-  //__asm volatile("cpsie i"); /* enable Interrupts*/
-#if PL_CONFIG_HAS_EVENTS
-  EVNT_SetEvent(EVNT_STARTUP);
-  __asm volatile("cpsie i");
-  for(;;){
-	  KEY_Scan();
-	  EVNT_HandleEvent(APP_EventHandler,TRUE);
-
-  }
-#endif
-
-  int cntr = 0;
   for(;;) {
-	  CLS1_SendStr("Hello ",CLS1_GetStdio()->stdOut);
-	  CLS1_SendNum32s(cntr,CLS1_GetStdio()->stdOut);
-	  CLS1_SendStr("\r\n",CLS1_GetStdio()->stdOut);
-	  cntr++;
     WAIT1_Waitms(25); /* just wait for some arbitrary time .... */
-   KEY_Scan();
-    EVNT_HandleEvent(APP_EventHandler,TRUE);
-
-
   }
 #endif
 }
