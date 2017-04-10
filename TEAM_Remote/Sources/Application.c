@@ -47,38 +47,46 @@
 
 void APP_EventHandler(EVNT_Handle event) {
 
+	//LED_Off(1);
 
-#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
   switch(event) {
   case EVNT_STARTUP:
     break;
+  case EVNT_LED_HEARTBEAT:
+	  //LED_Neg(1);
+	  break;
   case EVNT_SW1_PRESSED:
 	  CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
   case EVNT_SW2_PRESSED:
 	  CLS1_SendStr("SW2 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
   case EVNT_SW3_PRESSED:
 	  CLS1_SendStr("SW3 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
   case EVNT_SW4_PRESSED:
 	  CLS1_SendStr("SW4 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
   case EVNT_SW5_PRESSED:
 	  CLS1_SendStr("SW5 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
   case EVNT_SW6_PRESSED:
 	  CLS1_SendStr("SW6 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
   case EVNT_SW7_PRESSED:
 	  CLS1_SendStr("SW7 pressed!\n", CLS1_GetStdio()->stdOut);
+	  LED_On(1);
 	  break;
 
   default:
     break;
    } /* switch */
-
-#endif
 
 }
 #endif /* PL_CONFIG_HAS_EVENTS */
@@ -174,17 +182,11 @@ void APP_Start(void) {
 #endif
 
   __asm volatile("cpsie i");
-
-#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
   SHELL_Init();
   int counter = 0;
-#endif
-
 
   for(;;) {
 
-
-#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
 	KEY_Scan();
 
 	counter++;
@@ -194,8 +196,6 @@ void APP_Start(void) {
 	LED_Neg(1);
     WAIT1_Waitms(500); /* just wait for some arbitrary time .... */
     EVNT_HandleEvent(APP_EventHandler, TRUE);
-#endif
-
 
   }
 #endif

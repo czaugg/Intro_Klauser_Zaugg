@@ -56,7 +56,6 @@ typedef enum EVNT_Handle {
   #endif
 #endif
   /*!< \todo Your extra events here */
-  EVNT_TMR_OVERFLOW,
   EVNT_NOF_EVENTS       /*!< Must be last one! */
 } EVNT_Handle;
 
