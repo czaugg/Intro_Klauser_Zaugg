@@ -15,6 +15,10 @@
 #include "Keys.h"
 #include "KeyDebounce.h"
 #include "KIN1.h"
+
+#if PL_CONFIG_HAS_TRIGGER
+	#include "Trigger.h"
+#endif
 #if PL_CONFIG_HAS_SHELL
   #include "CLS1.h"
   #include "Shell.h"
@@ -45,9 +49,24 @@
 
 #if PL_CONFIG_HAS_EVENTS
 
+void LED_Blinker(void* num){
+	int* ptr = (int*)num;
+	int res = *ptr;
+	res--;
+	(*(int*)num)--;
+	LED_Neg(1);
+	if ((*((int*)num)) > 0){
+		TRG_SetTrigger(TRG_LED_BLINK, 500, LED_Blinker, num);
+	} else {
+		LED_Off(1);
+	}
+}
+
+	//uint8_t count;
+
 void APP_EventHandler(EVNT_Handle event) {
 
-	//LED_Off(1);
+	static uint8_t count;
 
   switch(event) {
   case EVNT_STARTUP:
@@ -57,33 +76,36 @@ void APP_EventHandler(EVNT_Handle event) {
 	  break;
   case EVNT_SW1_PRESSED:
 	  CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  LED_Neg(1);
 	  break;
   case EVNT_SW2_PRESSED:
 	  CLS1_SendStr("SW2 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  LED_Neg(1);
 	  break;
   case EVNT_SW3_PRESSED:
 	  CLS1_SendStr("SW3 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  LED_Neg(1);
 	  break;
   case EVNT_SW4_PRESSED:
+	  LED_Neg(1);
+	  break;
+  case EVNT_SW4_LPRESSED:
 	  CLS1_SendStr("SW4 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  count = 10;
+	  TRG_SetTrigger(TRG_LED_BLINK, 200, LED_Blinker, (void*) &count);
 	  break;
   case EVNT_SW5_PRESSED:
 	  CLS1_SendStr("SW5 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  LED_Neg(1);
 	  break;
   case EVNT_SW6_PRESSED:
 	  CLS1_SendStr("SW6 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  LED_Neg(1);
 	  break;
   case EVNT_SW7_PRESSED:
 	  CLS1_SendStr("SW7 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_On(1);
+	  LED_Neg(1);
 	  break;
-
   default:
     break;
    } /* switch */
@@ -157,48 +179,31 @@ void APP_Start(void) {
 #endif /* configUSE_TRACE_HOOKS */
 #endif
   PL_Init();
-#if PL_CONFIG_HAS_EVENTS
-  EVNT_SetEvent(EVNT_STARTUP);
-#endif
 #if PL_CONFIG_HAS_SHELL && CLS1_DEFAULT_SERIAL
   CLS1_SendStr((uint8_t*)"Hello World!\r\n", CLS1_GetStdio()->stdOut);
 #endif
   APP_AdoptToHardware();
 #if PL_CONFIG_HAS_RTOS
-
   vTaskStartScheduler(); /* start the RTOS, create the IDLE task and run my tasks (if any) */
   /* does usually not return! */
 #else
-
-  //__asm volatile("cpsie i"); /* enable Interrupts*/
 #if PL_CONFIG_HAS_EVENTS
   EVNT_SetEvent(EVNT_STARTUP);
-  __asm volatile("cpsie i");
-  for(;;){
-	  KEY_Scan();
-	  EVNT_HandleEvent(APP_EventHandler,TRUE);
-
-  }
 #endif
-
   __asm volatile("cpsie i");
   SHELL_Init();
   int counter = 0;
 
+
+
   for(;;) {
 
-	KEY_Scan();
 
-	counter++;
-	CLS1_SendStr("Hello World: ", CLS1_GetStdio()->stdOut);
-	CLS1_SendNum32s(counter, CLS1_GetStdio()->stdOut);
-	CLS1_SendStr("\n", CLS1_GetStdio()->stdOut);
-	LED_Neg(1);
-    WAIT1_Waitms(500); /* just wait for some arbitrary time .... */
-    EVNT_HandleEvent(APP_EventHandler, TRUE);
 
   }
 #endif
 }
+
+
 
 

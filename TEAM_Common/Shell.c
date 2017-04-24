@@ -284,9 +284,8 @@ static uint32_t SHELL_val; /* used as demo value for shell */
 void SHELL_SendString(unsigned char *msg) {
 #if PL_CONFIG_HAS_SHELL_QUEUE
   SQUEUE_SendString(msg);
-#elif CLS1_DEFAULT_SERIAL
-  CLS1_SendStr(msg, CLS1_GetStdio()->stdOut);
 #else
+  CLS1_SendStr(msg, CLS1_GetStdio()->stdOut);
 #endif
 }
 

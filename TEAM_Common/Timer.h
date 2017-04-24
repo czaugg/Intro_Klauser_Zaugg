@@ -13,7 +13,7 @@
 #if PL_CONFIG_HAS_TIMER
 
 /*! \todo Check timer tick frequency */
-#define TMR_TICK_MS  10
+#define TMR_TICK_MS  1
   /*!< we get called every TMR_TICK_MS ms */
 
 /*! \brief Function called from timer interrupt every TMR_TICK_MS. */

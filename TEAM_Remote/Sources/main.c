@@ -101,10 +101,27 @@
 /* User includes (#include below this line is not maintained by Processor Expert) */
 #include "Application.h"
 #include "LED.h"
+#include "Keys.h"
 
 void (*f)(void) = NULL;
 void cause_hard_fault(void) {
   f(); /* will cause a hard fault, as the function pointer is NULL */
+}
+
+int counter = 0;
+void loop(void *pvParameters) {
+	while (1) {
+		KEY_Scan();
+
+	/*	counter++;
+		CLS1_SendStr("Hello World: ", CLS1_GetStdio()->stdOut);
+		CLS1_SendNum32s(counter, CLS1_GetStdio()->stdOut);
+		CLS1_SendStr("\n", CLS1_GetStdio()->stdOut);
+*/
+
+		EVNT_HandleEvent(APP_EventHandler, TRUE);
+		vTaskDelay(50 / portTICK_PERIOD_MS);
+	}
 }
 
 
@@ -119,7 +136,8 @@ int main(void)
   /*** End of Processor Expert internal initialization.                    ***/
 
   /* Write your code here */
-  APP_Start();
+
+  xTaskCreate(loop, "main loop", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
   //cause_hard_fault();
   //while(1){
   //  LED_On(1);
@@ -128,7 +146,7 @@ int main(void)
 //	  WAIT1_Waitms(500);
 //  }
   /* For example: for(;;) { } */
-
+  APP_Start();
   /*** Don't write any code pass this line, or it will be deleted during code generation. ***/
   /*** RTOS startup code. Macro PEX_RTOS_START is defined by the RTOS component. DON'T MODIFY THIS CODE!!! ***/
   #ifdef PEX_RTOS_START
