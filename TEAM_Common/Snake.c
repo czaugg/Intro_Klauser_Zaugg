@@ -34,12 +34,14 @@
 #define LEFT  4
 
 
-#define SW_UP EVNT_EventIsSetAutoClear(EVNT_SW5_PRESSED)
-#define	SW_DOWN EVNT_EventIsSetAutoClear(EVNT_SW3_PRESSED)
-#define	SW_LEFT EVNT_EventIsSetAutoClear(EVNT_SW2_PRESSED)
-#define	SW_RIGTH EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED)
-#define	SW_MIDDLE EVNT_EventIsSet(EVNT_SW4_PRESSED)
-
+#define SW_UP 			EVNT_EventIsSetAutoClear(EVNT_SW5_PRESSED)
+#define	SW_DOWN 		EVNT_EventIsSetAutoClear(EVNT_SW3_PRESSED)
+#define	SW_LEFT 		EVNT_EventIsSetAutoClear(EVNT_SW2_PRESSED)
+#define	SW_RIGTH 		EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED)
+#define	SW_MIDDLE 		EVNT_EventIsSetAutoClear(EVNT_SW4_PRESSED)
+#define	SW_SIDE_UP 		EVNT_EventIsSetAutoClear(EVNT_SW6_PRESSED)
+#define	SW_SIDE_DOWN	EVNT_EventIsSetAutoClear(EVNT_SW7_PRESSED)
+#define CLEAR_EVENTS() 	SW_UP; SW_DOWN; SW_LEFT; SW_RIGTH; SW_MIDDLE; SW_SIDE_UP; SW_SIDE_DOWN;
 
 /* frame size */
 #define MAX_WIDTH  GDisp1_GetWidth()
@@ -72,10 +74,16 @@ static GDisp1_PixelDim snakeCols[SNAKE_MAX_LEN];
 static GDisp1_PixelDim snakeRow[SNAKE_MAX_LEN];
 
 static void waitAnyButton(void) {
-	while(SW_MIDDLE != 1){
-		vTaskDelay(50/portTICK_RATE_MS);
-	};
-	EVNT_ClearEvent(EVNT_SW4_PRESSED);
+	for(;;){
+		if (SW_UP) break;
+		if (SW_DOWN) break;
+		if (SW_LEFT) break;
+		if (SW_RIGTH) break;
+		if (SW_MIDDLE) break;
+		if (SW_SIDE_UP) break;
+		if (SW_SIDE_DOWN) break;
+	}
+	CLEAR_EVENTS();
 }
 
 static void delay(int ms) {
@@ -267,7 +275,7 @@ static void moveSnake(void) {
 		return;
 	}
 	/* START/PAUSE */
-	if(SW_MIDDLE) {
+	if(SW_MIDDLE || SW_SIDE_UP || SW_SIDE_DOWN) {
 		showPause();
 	}
 }
@@ -301,10 +309,11 @@ static void gameover(void) {
 	y += totalHeight;
 	FDisp1_WriteString((unsigned char*)"(Press Button)", GDisp1_COLOR_BLACK, &x, &y, font);
 	GDisp1_UpdateFull();
-	delay(4000);
+	delay(1000);
 	waitAnyButton();
 
-	resetGame();
+	//resetGame();
+	vTaskSuspend(NULL);
 }
 
 static void snake(void) {
@@ -390,16 +399,28 @@ static void intro(void) {
 	x = (GDisp1_GetWidth()-FDisp1_GetStringWidth((unsigned char*)"McuOnEclipse", font, NULL))/2; /* center text */
 	FDisp1_WriteString((unsigned char*)"McuOnEclipse", GDisp1_COLOR_BLACK, &x, &y, font);
 	GDisp1_UpdateFull();
-	WAIT1_WaitOSms(3000);
+	WAIT1_WaitOSms(1500);
 }
 
-static void SnakeTask(void *pvParameters) {
-	intro();
-	resetGame();
-	for(;;) {
+void SnakeTask(void* PvParameters){
+
+	for(;;){
 		snake();
 		vTaskDelay(time/portTICK_RATE_MS);
 	}
+}
+
+xTaskHandle SNAKE_RunTask(void){
+	static xTaskHandle snakeTaskHandle = NULL;
+
+	if (snakeTaskHandle == NULL){
+		if (xTaskCreate(SnakeTask, "Snake", 500, (void*) NULL, tskIDLE_PRIORITY + 1, &snakeTaskHandle) != pdPASS) {
+			for(;;){} /* error */
+		}
+	} else if (eTaskGetState(snakeTaskHandle) == eSuspended){
+		vTaskResume(snakeTaskHandle);
+	}
+	return snakeTaskHandle;
 }
 
 void SNAKE_Deinit(void) {
@@ -407,6 +428,7 @@ void SNAKE_Deinit(void) {
 }
 
 void SNAKE_Init(void) {
-	xTaskCreate(SnakeTask, "Snake", 500, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
+	intro();
+	resetGame();
 }
 #endif /* PL_HAS_SNAKE_GAME */

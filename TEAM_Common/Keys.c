@@ -54,14 +54,22 @@ void KEY_Scan(void) {
   }
 #endif
 #if PL_CONFIG_NOF_KEYS>=6 && !PL_CONFIG_KEY_6_ISR
+#if PL_CONFIG_HAS_DEBOUNCE
+  KEYDBNC_Process();
+#else
   if (KEY6_Get()) { /* key pressed */
     EVNT_SetEvent(EVNT_SW6_PRESSED);
   }
 #endif
+#endif
 #if PL_CONFIG_NOF_KEYS>=7 && !PL_CONFIG_KEY_7_ISR
+#if PL_CONFIG_HAS_DEBOUNCE
+  KEYDBNC_Process();
+#else
   if (KEY7_Get()) { /* key pressed */
     EVNT_SetEvent(EVNT_SW7_PRESSED);
   }
+#endif
 #endif
 }
 
@@ -172,12 +180,28 @@ void KEY_OnInterrupt(KEY_Buttons button) {
 }
 #endif
 
+/*! \key polling task for keys without interrupt */
+void KEY_PollingTask(void *pvParameters){
+	(void)pvParameters; /* not used */
+
+	while (1) {
+		KEY_Scan();
+		vTaskDelay(50 / portTICK_RATE_MS);
+	}
+}
+
 /*! \brief Key driver initialization */
 void KEY_Init(void) {
 #if PL_CONFIG_BOARD_IS_ROBO_V2
   /* enable and turn on pull-up resistor for PTA14 */
   PORT_PDD_SetPinPullSelect(PORTA_BASE_PTR, 14, PORT_PDD_PULL_UP);
   PORT_PDD_SetPinPullEnable(PORTA_BASE_PTR, 14, PORT_PDD_PULL_ENABLE);
+#endif
+
+#if PL_CONFIG_HAS_KEY_POLLING_TASK && PL_CONFIG_HAS_RTOS
+  if (xTaskCreate(KEY_PollingTask, "Key polling task", 300/sizeof(StackType_t), (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL) != pdPASS) {
+    for(;;){} /* error */
+  }
 #endif
 }
 

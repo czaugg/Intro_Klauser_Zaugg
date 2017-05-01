@@ -112,27 +112,7 @@ void cause_hard_fault(void) {
 
 void loop(void *pvParameters) {
 
-	while (1) {
-		KEY_Scan();
 
-	/*	counter++;
-		CLS1_SendStr("Hello World: ", CLS1_GetStdio()->stdOut);
-		CLS1_SendNum32s(counter, CLS1_GetStdio()->stdOut);
-		CLS1_SendStr("\n", CLS1_GetStdio()->stdOut);
-*/		//CLS1_SendStr("MainLoop started\n", CLS1_GetStdio()->stdOut);
-		EVNT_HandleEvent(APP_EventHandler, FALSE);
-
-		if (EVNT_EventIsSet(EVNT_SW2_PRESSED) == TRUE) {
-			CLS1_SendStr("Fist try!\n", CLS1_GetStdio()->stdOut);
-		}
-
-		if (EVNT_EventIsSetAutoClear(EVNT_SW2_PRESSED) == TRUE) {
-			CLS1_SendStr("Second try\n", CLS1_GetStdio()->stdOut);
-		}
-		EVNT_ClearEvent(EVNT_SW2_PRESSED);
-		vTaskDelay(100 / portTICK_PERIOD_MS);
-
-	}
 }
 
 
@@ -148,7 +128,7 @@ int main(void)
 
   /* Write your code here */
 
-  xTaskCreate(loop, "Main loop", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
+  //xTaskCreate(loop, "Main loop", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
   //SNAKE_Init();
   //cause_hard_fault();
   //while(1){

@@ -14,7 +14,7 @@
 #include "Event.h" /* our own interface */
 #include "CS1.h"
 
-typedef uint32_t EVNT_MemUnit; /*!< memory unit used to store events flags */
+typedef uint8_t EVNT_MemUnit; /*!< memory unit used to store events flags */
 #define EVNT_MEM_UNIT_NOF_BITS  (sizeof(EVNT_MemUnit)*8u)
   /*!< number of bits in memory unit */
 
@@ -25,7 +25,7 @@ static EVNT_MemUnit EVNT_Events[((EVNT_NOF_EVENTS-1)/EVNT_MEM_UNIT_NOF_BITS)+1];
 #define CLR_EVENT(event) \
   EVNT_Events[(event)/EVNT_MEM_UNIT_NOF_BITS] &= ~((1u<<(EVNT_MEM_UNIT_NOF_BITS-1))>>(((event)%EVNT_MEM_UNIT_NOF_BITS))) /*!< Clear the event */
 #define GET_EVENT(event) \
-  (EVNT_Events[(event)/EVNT_MEM_UNIT_NOF_BITS]&((1u<<(EVNT_MEM_UNIT_NOF_BITS-1))>>(((event)%EVNT_MEM_UNIT_NOF_BITS)))) /*!< Return TRUE if event is set */
+  (EVNT_Events[(event)/EVNT_MEM_UNIT_NOF_BITS]&(((1u<<(EVNT_MEM_UNIT_NOF_BITS-1))>>(((event)%EVNT_MEM_UNIT_NOF_BITS))))) /*!< Return TRUE if event is set */
 
 void EVNT_SetEvent(EVNT_Handle event) {
   /*! \todo Make it reentrant */
@@ -51,7 +51,7 @@ bool EVNT_EventIsSet(EVNT_Handle event) {
   CS1_CriticalVariable()
 
   CS1_EnterCritical();
-  res = GET_EVENT(event);
+  res = (GET_EVENT(event) != 0);
   CS1_ExitCritical();
   return res;
 }

@@ -9,8 +9,8 @@
 #ifndef SNAKE_H_
 #define SNAKE_H_
 
-/*! \todo Extend interface as needed */
-
+/*! \brief  */
+xTaskHandle SNAKE_RunTask(void);
 /*!
  * \brief Driver de-initialization.
  */

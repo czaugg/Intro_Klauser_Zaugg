@@ -62,6 +62,7 @@
 #define PL_CONFIG_HAS_TRIGGER           (1 && !defined(PL_LOCAL_CONFIG_HAS_TRIGGER_DISABLED)) /* support for triggers */
 #define PL_CONFIG_HAS_DEBOUNCE          (1 && !defined(PL_LOCAL_CONFIG_HAS_DEBOUNCE_DISABLED)) /* support for debouncing */
 #define PL_CONFIG_HAS_RTOS              (1 && !defined(PL_LOCAL_CONFIG_HAS_RTOS_DISABLED)) /* RTOS support */
+#define PL_CONFIG_HAS_KEY_POLLING_TASK	(1 && !defined(PL_LOCAL_CONFIG_HAS_KEY_POLLING_TASK_DISABLED)) /* key polling task */
 #define PL_CONFIG_HAS_SHELL             (1 && !defined(PL_LOCAL_CONFIG_HAS_SHELL_DISABLED)) /* shell support disabled for now */
 #define PL_CONFIG_HAS_SEGGER_RTT        (1 && !defined(PL_LOCAL_CONFIG_HAS_SEGGER_RTT_DISABLED) && PL_CONFIG_HAS_SHELL) /* using RTT with shell */
 #define PL_CONFIG_HAS_SHELL_QUEUE       (1 && !defined(PL_LOCAL_CONFIG_HAS_SHELL_QUEUE_DISABLED) && PL_CONFIG_HAS_SHELL) /* enable shell queueing */
