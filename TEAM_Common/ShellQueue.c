@@ -71,7 +71,7 @@ unsigned char *SQUEUE_ReceiveMessage(void) {
 #endif /* QUEUE_SINGLE_CHAR */
 
 unsigned short SQUEUE_NofElements(void) {
-  return (unsigned short)FRTOS1_uxQueueMessagesWaiting(SQUEUE_Queue);
+  return (unsigned short)uxQueueMessagesWaiting(SQUEUE_Queue);
 }
 
 void SQUEUE_Deinit(void) {

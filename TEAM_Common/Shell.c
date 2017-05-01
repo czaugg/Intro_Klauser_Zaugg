@@ -84,13 +84,13 @@
 #include "TmDt1.h"
 
 #if CLS1_DEFAULT_SERIAL
-  #error "Default is RTT. Disable any Shell default connection in the component propeties, as we are setting it a runtime!"
+  #error "Default is RTT. Disable any Shell default connection in the component properties, as we are setting it a runtime!"
 #endif
-#define SHELL_CONFIG_HAS_EXTRA_UART  (1) /* use AsynchroSerial */
-#define SHELL_CONFIG_HAS_SHELL_RTT   (1) /* use SEGGER RTT */
+#define SHELL_CONFIG_HAS_SHELL_UART  (1) /* use AsynchroSerial */
+#define SHELL_CONFIG_HAS_SHELL_RTT   (1 && PL_CONFIG_HAS_SEGGER_RTT) /* use SEGGER RTT */
 #define SHELL_CONFIG_HAS_SHELL_CDC   (1 && PL_CONFIG_HAS_USB_CDC) /* use USB CDC */
 
-#if SHELL_CONFIG_HAS_EXTRA_UART
+#if SHELL_CONFIG_HAS_SHELL_UART
  /* ******************************************************************
   * UART Standard I/O
   * ******************************************************************/
@@ -117,21 +117,17 @@
     .keyPressed = UART_KeyPressed,
   };
 
-  static uint8_t UART_DefaultShellBuffer[CLS1_DEFAULT_SHELL_BUFFER_SIZE]; /* default buffer which can be used by the application */
+  //static uint8_t UART_DefaultShellBuffer[CLS1_DEFAULT_SHELL_BUFFER_SIZE]; /* default buffer which can be used by the application */
 #endif
-/********************************************************************/
-
-typedef struct {
-  CLS1_ConstStdIOType *stdio;
-  unsigned char *buf;
-  size_t bufSize;
-} SHELL_IODesc;
-
+/* ******************************************************************
+ * SHELL Standard I/O
+ * ******************************************************************/
 static void SHELL_SendChar(uint8_t ch) {
 #if SHELL_CONFIG_HAS_SHELL_RTT
-  RTT1_SendChar(ch);
+  CLS1_SendCharFct(ch, RTT1_SendChar); /* blocking version with timeout */
+  //RTT1_SendChar(ch); /* this one is not blocking, will loose characters if sending too fast */
 #endif
-#if SHELL_CONFIG_HAS_EXTRA_UART
+#if SHELL_CONFIG_HAS_SHELL_UART
   UART_SendChar(ch);
 #endif
 #if SHELL_CONFIG_HAS_SHELL_CDC
@@ -147,7 +143,7 @@ static void SHELL_ReadChar(uint8_t *p) {
     return;
   }
 #endif
-#if SHELL_CONFIG_HAS_EXTRA_UART
+#if SHELL_CONFIG_HAS_SHELL_UART
   if (UART_stdio.keyPressed()) {
     UART_stdio.stdIn(p);
     return;
@@ -167,7 +163,7 @@ static bool SHELL_KeyPressed(void) {
     return TRUE;
   }
 #endif
-#if SHELL_CONFIG_HAS_EXTRA_UART
+#if SHELL_CONFIG_HAS_SHELL_UART
   if (UART_stdio.keyPressed()) {
     return TRUE;
   }
@@ -194,13 +190,19 @@ CLS1_ConstStdIOType *SHELL_GetStdio(void) {
   return &SHELL_stdio;
 }
 
+typedef struct {
+  CLS1_ConstStdIOType *stdio;
+  unsigned char *buf;
+  size_t bufSize;
+} SHELL_IODesc;
+
 static const SHELL_IODesc ios[] =
 {
-    {&SHELL_stdio, SHELL_DefaultShellBuffer, sizeof(SHELL_DefaultShellBuffer)},
+  {&SHELL_stdio, SHELL_DefaultShellBuffer, sizeof(SHELL_DefaultShellBuffer)},
 #if SHELL_CONFIG_HAS_SHELL_RTT
-    {&RTT1_stdio, RTT1_DefaultShellBuffer, sizeof(RTT1_DefaultShellBuffer)},
+  //{&RTT1_stdio, RTT1_DefaultShellBuffer, sizeof(RTT1_DefaultShellBuffer)},
 #endif
-    /*! \todo Extend as needed */
+  /*! \todo Extend as needed */
 };
 
 /* forward declaration */
@@ -353,14 +355,32 @@ static void ShellTask(void *pvParameters) {
     ios[i].buf[0] = '\0';
   }
   SHELL_SendString("Shell task started!\r\n");
-#if CLS1_DEFAULT_SERIAL
   (void)CLS1_ParseWithCommandTable((unsigned char*)CLS1_CMD_HELP, ios[0].stdio, CmdParserTable);
-#endif
   for(;;) {
     /* process all I/Os */
     for(i=0;i<sizeof(ios)/sizeof(ios[0]);i++) {
       (void)CLS1_ReadAndParseWithCommandTable(ios[i].buf, ios[i].bufSize, ios[i].stdio, CmdParserTable);
     }
+#if PL_CONFIG_HAS_SHELL_QUEUE && PL_CONFIG_SQUEUE_SINGLE_CHAR
+    {
+        /*! \todo Handle shell queue */
+      unsigned char ch;
+
+      while((ch=SQUEUE_ReceiveChar()) && ch!='\0') {
+        SHELL_stdio.stdOut(ch);
+      }
+    }
+#elif PL_CONFIG_HAS_SHELL_QUEUE /* !PL_CONFIG_SQUEUE_SINGLE_CHAR */
+    {
+      const unsigned char *msg;
+
+      msg = SQUEUE_ReceiveMessage();
+      if (msg!=NULL) {
+        CLS1_SendStr(msg, SHELL_stdio.stdOut);
+        vPortFree((void*)msg);
+      }
+    }
+#endif /* PL_CONFIG_HAS_SHELL_QUEUE */
     vTaskDelay(pdMS_TO_TICKS(10));
   } /* for */
 }
@@ -369,11 +389,8 @@ static void ShellTask(void *pvParameters) {
 void SHELL_Init(void) {
   SHELL_val = 0;
   CLS1_SetStdio(SHELL_GetStdio()); /* set default standard I/O to RTT */
-#if !CLS1_DEFAULT_SERIAL && PL_CONFIG_CONFIG_HAS_BLUETOOTH
-  (void)CLS1_SetStdio(&BT_stdio); /* use the Bluetooth stdio as default */
-#endif
 #if PL_CONFIG_HAS_RTOS
-  if (FRTOS1_xTaskCreate(ShellTask, "Shell", configMINIMAL_STACK_SIZE+100, NULL, tskIDLE_PRIORITY+1, NULL) != pdPASS) {
+  if (xTaskCreate(ShellTask, "Shell", 700/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+1, NULL) != pdPASS) {
     for(;;){} /* error */
   }
 #endif

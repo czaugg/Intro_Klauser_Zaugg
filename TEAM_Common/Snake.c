@@ -33,6 +33,14 @@
 #define DOWN  3
 #define LEFT  4
 
+
+#define SW_UP EVNT_EventIsSetAutoClear(EVNT_SW5_PRESSED)
+#define	SW_DOWN EVNT_EventIsSetAutoClear(EVNT_SW3_PRESSED)
+#define	SW_LEFT EVNT_EventIsSetAutoClear(EVNT_SW2_PRESSED)
+#define	SW_RIGTH EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED)
+#define	SW_MIDDLE EVNT_EventIsSet(EVNT_SW4_PRESSED)
+
+
 /* frame size */
 #define MAX_WIDTH  GDisp1_GetWidth()
 #define MAX_HEIGHT GDisp1_GetHeight()
@@ -64,7 +72,10 @@ static GDisp1_PixelDim snakeCols[SNAKE_MAX_LEN];
 static GDisp1_PixelDim snakeRow[SNAKE_MAX_LEN];
 
 static void waitAnyButton(void) {
-	/*! \todo Wait for any button pressed */
+	while(SW_MIDDLE != 1){
+		vTaskDelay(50/portTICK_RATE_MS);
+	};
+	EVNT_ClearEvent(EVNT_SW4_PRESSED);
 }
 
 static void delay(int ms) {
@@ -228,35 +239,35 @@ static void direc(int d) {
 static void moveSnake(void) {
 	/* LEFT */
 	/*! \todo handle events */
-	if("left event" && !right) {
+	if(SW_LEFT && !right) {
 		if((xSnake > 0 || xSnake <= GDisp1_GetWidth() - xSnake)) {
 			direc(LEFT);
 		}
 		return;
 	}
 	/* RIGHT */
-	if("right event" && !left) {
+	if(SW_RIGTH && !left) {
 		if((xSnake > 0 || xSnake <= GDisp1_GetWidth() - xSnake)) {
 			direc(RIGHT);
 		}
 		return;
 	}
 	/* UP */
-	if("up event" && !down) {
+	if(SW_UP && !down) {
 		if((ySnake > 0 || ySnake <= GDisp1_GetHeight() - ySnake)) {
 			direc(UP);
 		}
 		return;
 	}
 	/* DOWN */
-	if("down event" && !up) {
+	if(SW_DOWN && !up) {
 		if((ySnake > 0 || ySnake <= GDisp1_GetHeight() - ySnake)) {
 			direc(DOWN);
 		}
 		return;
 	}
 	/* START/PAUSE */
-	if("start/pause event") {
+	if(SW_MIDDLE) {
 		showPause();
 	}
 }
@@ -396,6 +407,6 @@ void SNAKE_Deinit(void) {
 }
 
 void SNAKE_Init(void) {
-	/*! \todo implement init */
+	xTaskCreate(SnakeTask, "Snake", 500, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
 }
 #endif /* PL_HAS_SNAKE_GAME */

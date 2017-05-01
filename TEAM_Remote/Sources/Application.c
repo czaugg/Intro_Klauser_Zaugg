@@ -47,6 +47,7 @@
   #include "LCD.h"
 #endif
 
+#include "Sem.h"
 #if PL_CONFIG_HAS_EVENTS
 
 void LED_Blinker(void* num){
@@ -72,39 +73,30 @@ void APP_EventHandler(EVNT_Handle event) {
   case EVNT_STARTUP:
     break;
   case EVNT_LED_HEARTBEAT:
-	  //LED_Neg(1);
 	  break;
   case EVNT_SW1_PRESSED:
 	  CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_Neg(1);
 	  break;
   case EVNT_SW2_PRESSED:
 	  CLS1_SendStr("SW2 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_Neg(1);
 	  break;
   case EVNT_SW3_PRESSED:
 	  CLS1_SendStr("SW3 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_Neg(1);
 	  break;
   case EVNT_SW4_PRESSED:
-	  LED_Neg(1);
-	  break;
   case EVNT_SW4_LPRESSED:
 	  CLS1_SendStr("SW4 pressed!\n", CLS1_GetStdio()->stdOut);
-	  count = 10;
-	  TRG_SetTrigger(TRG_LED_BLINK, 200, LED_Blinker, (void*) &count);
+	  //count = 10;
+	  //TRG_SetTrigger(TRG_LED_BLINK, 200, LED_Blinker, (void*) &count);
 	  break;
   case EVNT_SW5_PRESSED:
 	  CLS1_SendStr("SW5 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_Neg(1);
 	  break;
   case EVNT_SW6_PRESSED:
 	  CLS1_SendStr("SW6 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_Neg(1);
 	  break;
   case EVNT_SW7_PRESSED:
 	  CLS1_SendStr("SW7 pressed!\n", CLS1_GetStdio()->stdOut);
-	  LED_Neg(1);
 	  break;
   default:
     break;
@@ -203,7 +195,4 @@ void APP_Start(void) {
   }
 #endif
 }
-
-
-
 
