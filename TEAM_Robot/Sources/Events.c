@@ -38,6 +38,7 @@ extern "C" {
 /* User includes (#include below this line is not maintained by Processor Expert) */
 #include "Platform.h"
 #include "Timer.h"
+#include "Keys.h"
 /*
 ** ===================================================================
 **     Event       :  Cpu_OnNMIINT (module Events)
@@ -221,6 +222,25 @@ void QuadInt_OnInterrupt(void)
   //SEGGER_SYSVIEW_OnUserStop(0);
   SYS1_RecordExitISR();
 #endif
+}
+
+/*
+** ===================================================================
+**     Event       :  SW1_OnInterrupt (module Events)
+**
+**     Component   :  SW1 [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void SW1_OnInterrupt(void)
+{
+	#if PL_CONFIG_HAS_KBI
+		KEY_OnInterrupt(KEY_BTN1);
+	#endif
 }
 
 /* END Events */

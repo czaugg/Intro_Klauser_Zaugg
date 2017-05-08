@@ -128,6 +128,11 @@ void KEY_DisableInterrupts(void);
 
 #endif
 
+#if PL_CONFIG_HAS_RTOS
+/*! \key polling task for keys without interrupt */
+void KEY_PollingTask(void *pvParameters);
+#endif
+
 /*!
  * \brief Checks the key status and generates the events.
  */

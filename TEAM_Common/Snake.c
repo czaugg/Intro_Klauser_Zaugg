@@ -411,7 +411,7 @@ void SnakeTask(void* PvParameters){
 }
 
 xTaskHandle SNAKE_RunTask(void){
-	static xTaskHandle snakeTaskHandle = NULL;
+	xTaskHandle snakeTaskHandle = xTaskGetHandle(&"Snake");
 
 	if (snakeTaskHandle == NULL){
 		if (xTaskCreate(SnakeTask, "Snake", 500, (void*) NULL, tskIDLE_PRIORITY + 1, &snakeTaskHandle) != pdPASS) {

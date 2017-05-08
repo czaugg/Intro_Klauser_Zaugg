@@ -48,37 +48,20 @@
 void APP_EventHandler(EVNT_Handle event) {
 
 
-#if PL_LOCAL_CONFIG_BOARD_IS_REMOTE
   switch(event) {
   case EVNT_STARTUP:
+	  BUZ_PlayTune(BUZ_TUNE_WELCOME);
     break;
   case EVNT_SW1_PRESSED:
 	  CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
+	  BUZ_PlayTune(BUZ_TUNE_BUTTON);
 	  break;
-  case EVNT_SW2_PRESSED:
-	  CLS1_SendStr("SW2 pressed!\n", CLS1_GetStdio()->stdOut);
-	  break;
-  case EVNT_SW3_PRESSED:
-	  CLS1_SendStr("SW3 pressed!\n", CLS1_GetStdio()->stdOut);
-	  break;
-  case EVNT_SW4_PRESSED:
-	  CLS1_SendStr("SW4 pressed!\n", CLS1_GetStdio()->stdOut);
-	  break;
-  case EVNT_SW5_PRESSED:
-	  CLS1_SendStr("SW5 pressed!\n", CLS1_GetStdio()->stdOut);
-	  break;
-  case EVNT_SW6_PRESSED:
-	  CLS1_SendStr("SW6 pressed!\n", CLS1_GetStdio()->stdOut);
-	  break;
-  case EVNT_SW7_PRESSED:
-	  CLS1_SendStr("SW7 pressed!\n", CLS1_GetStdio()->stdOut);
-	  break;
-
+  case EVNT_SW1_LPRESSED:
+	  BUZ_PlayTune(BUZ_TUNE_BUTTON_LONG);
+  	  break;
   default:
     break;
    } /* switch */
-
-#endif
 
 }
 #endif /* PL_CONFIG_HAS_EVENTS */
@@ -151,9 +134,10 @@ void APP_Start(void) {
   PL_Init();
 #if PL_CONFIG_HAS_EVENTS
   EVNT_SetEvent(EVNT_STARTUP);
-#endif
+#else
 #if PL_CONFIG_HAS_SHELL && CLS1_DEFAULT_SERIAL
   CLS1_SendStr((uint8_t*)"Hello World!\r\n", CLS1_GetStdio()->stdOut);
+#endif
 #endif
   APP_AdoptToHardware();
 #if PL_CONFIG_HAS_RTOS

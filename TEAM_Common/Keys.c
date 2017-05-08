@@ -180,6 +180,7 @@ void KEY_OnInterrupt(KEY_Buttons button) {
 }
 #endif
 
+#if PL_CONFIG_HAS_RTOS
 /*! \key polling task for keys without interrupt */
 void KEY_PollingTask(void *pvParameters){
 	(void)pvParameters; /* not used */
@@ -189,6 +190,7 @@ void KEY_PollingTask(void *pvParameters){
 		vTaskDelay(50 / portTICK_RATE_MS);
 	}
 }
+#endif
 
 /*! \brief Key driver initialization */
 void KEY_Init(void) {

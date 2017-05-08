@@ -112,6 +112,7 @@ static LCDMenu_StatusFlags SnakeGameHandler(const struct LCDMenu_MenuItem_ *item
 			  do {
 				  vTaskDelay(50 / portTICK_RATE_MS);
 			  } while (eTaskGetState(snakeHandle) != eSuspended);
+			  vTaskDelete(snakeHandle);
 			  LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL);
 			  break;
 	  }
