@@ -516,16 +516,6 @@ byte REF_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_StdIOT
   return ERR_OK;
 }
 
-#if PL_CONFIG_HAS_SUMO
-static void SUMO_CheckWhiteLine(SensorTimeType calib[], uint16_t threshold){
-	if (calib[0] < threshold){
-		EVNT_SetEvent(SUMO_ALARM_LINE_LEFT);
-	}
-	if ((calib[REF_NOF_SENSORS] - 1) < threshold){
-		EVNT_SetEvent(SUMO_ALARM_LINE_RIGHT);
-	}
-}
-#endif
 
 static void REF_StateMachine(void) {
   int i;
@@ -596,10 +586,6 @@ static void REF_StateMachine(void) {
         
     case REF_STATE_READY:
       REF_Measure();
-
-#if PL_CONFIG_HAS_SUMO
-      SUMO_CheckWhiteLine(SensorCalibrated, SUMO_LINE_THRESHOLD);
-#endif
 
 #if REF_START_STOP_CALIB
       if (FRTOS1_xSemaphoreTake(REF_StartStopSem, 0)==pdTRUE) {

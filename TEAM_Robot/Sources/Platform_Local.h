@@ -68,6 +68,9 @@
 #define PL_LOCAL_CONFIG_HAS_LINE_FOLLOW_DISABLED          /* disable line following */
 //#define PL_LOCAL_CONFIG_HAS_SUMO_DISABLED					/* disable SUMO*/
 
+//#define PL_LOCAL_CONFIG_HAS_DISTANCE_DISABLED             /* disabling distance sensors */
+//#define PL_LOCAL_CONFIG_HAS_TOF_SENSOR_DISABLED           /* disabling ToF sensors */
+
 //#define PL_LOCAL_CONFIG_HAS_TURN_DISABLED                 /* disable turning module */
 #define PL_LOCAL_CONFIG_HAS_LINE_MAZE_DISABLED            /* disable maze solving */
 #define PL_LOCAL_CONFIG_HAS_BATTERY_ADC_DISABLED          /* disable battery ADC */

@@ -80,6 +80,9 @@
 #if PL_CONFIG_HAS_BATTERY_ADC
   #include "Battery.h"
 #endif
+#if PL_HAS_DISTANCE_SENSOR
+  #include "Distance.h"
+#endif
 #include "KIN1.h"
 #include "TmDt1.h"
 
@@ -278,6 +281,9 @@ static const CLS1_ParseCommandCallback CmdParserTable[] =
 #endif
 #if TmDt1_PARSE_COMMAND_ENABLED
   TmDt1_ParseCommand,
+#endif
+#if PL_HAS_DISTANCE_SENSOR
+  DIST_ParseCommand,
 #endif
   NULL /* Sentinel */
 };

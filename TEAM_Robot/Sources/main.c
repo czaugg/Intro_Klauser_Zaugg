@@ -110,6 +110,7 @@
 #include "Drive.h"
 #include "Turn.h"
 
+/*
 void loop(void *pvParameters) {
 	bool run = FALSE;
 	while(1){
@@ -155,6 +156,7 @@ void loop(void *pvParameters) {
 		vTaskDelay(10/portTICK_PERIOD_MS);
 	}
 }
+*/
 
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 int main(void)
@@ -168,7 +170,7 @@ int main(void)
 
   /* Write your code here */
 
-  xTaskCreate(loop, "Main loop", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
+  //xTaskCreate(loop, "Main loop", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
   APP_Start();
 
   /* For example: for(;;) { } *
