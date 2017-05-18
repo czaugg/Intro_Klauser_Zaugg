@@ -55,6 +55,9 @@ typedef enum EVNT_Handle {
   EVNT_SW7_LPRESSED,
   #endif
 #endif
+  SUMO_ALARM_LINE_RIGHT,
+  SUMO_ALARM_LINE_LEFT,
+  SUMO_LINE_OK,
   /*!< \todo Your extra events here */
   EVNT_NOF_EVENTS       /*!< Must be last one! */
 } EVNT_Handle;

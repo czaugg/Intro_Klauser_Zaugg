@@ -39,6 +39,10 @@ extern "C" {
 #include "Platform.h"
 #include "Timer.h"
 #include "Keys.h"
+#if PL_CONFIG_HAS_MOTOR_TACHO
+#include "Tacho.h"
+#endif
+
 /*
 ** ===================================================================
 **     Event       :  Cpu_OnNMIINT (module Events)
@@ -74,9 +78,9 @@ void Cpu_OnNMIINT(void)
 void TI1_OnInterrupt(void)
 {
 //EVNT_SetEvent(EVNT_LED_HEARTBEAT);
-#if PL_CONFIG_HAS_TIMER
-  TMR_OnInterrupt();
-#endif
+//#if PL_CONFIG_HAS_TIMER
+//  TMR_OnInterrupt();
+//#endif
   TmDt1_AddTick();
 }
 

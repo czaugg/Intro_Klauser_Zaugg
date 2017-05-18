@@ -106,13 +106,53 @@
 #include "IO_Map.h"
 /* User includes (#include below this line is not maintained by Processor Expert) */
 #include "Application.h"
-
+#include "LED.h"
+#include "Drive.h"
+#include "Turn.h"
 
 void loop(void *pvParameters) {
-
+	bool run = FALSE;
 	while(1){
-		EVNT_HandleEvent(APP_EventHandler, TRUE);
-		vTaskDelay(50 / portTICK_RATE_MS);
+
+		if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED) && run == FALSE){
+			run = TRUE;
+			DRV_SetMode(DRV_MODE_SPEED);
+			DRV_SetSpeed(1000, 1000);
+		} else if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED) && run == TRUE){
+			run = FALSE;
+			DRV_SetMode(DRV_MODE_STOP);
+		}
+
+
+
+		if(EVNT_EventIsSetAutoClear(SUMO_ALARM_LINE_RIGHT)){
+			LED_On(2);
+			if (run){
+				DRV_SetSpeed(0,0);
+				vTaskDelay(100/portTICK_PERIOD_MS);
+				TURN_TurnAngle(90, NULL);
+			    TURN_Turn(TURN_STOP, NULL);
+				DRV_SetMode(DRV_MODE_SPEED);
+				DRV_SetSpeed(1000, 1000);
+			}
+		} else {
+			LED_Off(2);
+		}
+		if(EVNT_EventIsSetAutoClear(SUMO_ALARM_LINE_LEFT)){
+			LED_On(1);
+			if (run){
+				DRV_SetSpeed(0,0);
+				vTaskDelay(100/portTICK_PERIOD_MS);
+				TURN_TurnAngle(-90, NULL);
+			    TURN_Turn(TURN_STOP, NULL);
+				DRV_SetMode(DRV_MODE_SPEED);
+				DRV_SetSpeed(1000, 1000);
+			}
+		} else {
+			LED_Off(1);
+		}
+
+		vTaskDelay(10/portTICK_PERIOD_MS);
 	}
 }
 
