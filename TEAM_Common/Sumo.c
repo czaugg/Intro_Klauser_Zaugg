@@ -15,6 +15,11 @@
 #include "CLS1.h"
 #include "LED.h"
 
+#define DIR_LEFT 1
+#define DIR_RIGHT 2
+#define SPEED 2500
+#define ESCAPE_TURN_ANGLE 130
+
 typedef enum {
   SUMO_STATE_IDLE,
   SUMO_STATE_DRIVING,
@@ -26,6 +31,12 @@ typedef enum {
 	SUMO_STRATEGY_ATTACK
 } SUMO_Strategy_t;
 
+typedef enum {
+	SUMO_TURN_NOT,
+	SUMO_TURN_LEFT,
+	SUMO_TURN_RIGHT
+} SUMO_Turn_t;
+
 static SUMO_State_t sumoState = SUMO_STATE_IDLE;
 static SUMO_State_t sumoStrategy = SUMO_STRATEGY_BRICK;
 static TaskHandle_t sumoTaskHndl;
@@ -36,10 +47,11 @@ static TaskHandle_t sumoTaskHndl;
 #define SUMO_ALARM_LINE (1<<2)  /* white line detected */
 #define SUMO_LINE_LEFT  (1<<3)
 #define SUMO_LINE_RIGHT (1<<4)
+#define SUMO_RUN		(1<<5)
 #define SUMO_ALL_FLAGS  (0xFFFF)
 
 static bool SUMO_IsRunningSumo(void) {
-  return sumoState==SUMO_STATE_DRIVING;
+  return sumoState!=SUMO_STATE_IDLE;
 }
 
 void SUMO_StartSumo(void) {
@@ -58,58 +70,82 @@ void SUMO_StartStopSumo(void) {
   }
 }
 
-static void SumoCheckLine(uint16_t threshold){
+static SUMO_Turn_t SumoCheckLine(uint16_t lineThreshold){
+	SUMO_Turn_t line = SUMO_TURN_NOT;
 	uint16_t refSens[REF_NOF_SENSORS];
-	REF_GetSensorValues(&refSens, REF_NOF_SENSORS);
+	REF_GetSensorValues(refSens, REF_NOF_SENSORS);
 
 	LED_Off(1);
 	LED_Off(2);
 
-	if (refSens[0] < threshold){
+	if (refSens[0] < lineThreshold){
 		(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_LEFT, eSetBits);
 		LED_On(1);
+		line = SUMO_TURN_LEFT;
 	}
-	if ((refSens[REF_NOF_SENSORS] - 1) < threshold){
+	if ((refSens[REF_NOF_SENSORS-1]) < lineThreshold){
 		(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_RIGHT, eSetBits);
 		LED_On(2);
+		line = SUMO_TURN_RIGHT;
 	}
+	return line;
 }
 
-static void SumoStateMachine(void) {
-  uint32_t notifcationValue;
+static bool SumoEscapeLine(SUMO_Turn_t turn){
+	uint32_t notify;
 
-  (void)xTaskNotifyWait(0UL, SUMO_START_SUMO|SUMO_STOP_SUMO|SUMO_ALARM_LINE, &notifcationValue, 0); /* check flags */
+	bool line = FALSE;
+	DRV_SetSpeed(-SPEED, -SPEED);
+	vTaskDelay(200/portTICK_PERIOD_MS);
+	DRV_SetMode(DRV_MODE_STOP);
+
+	if (turn == SUMO_TURN_LEFT){
+		TURN_TurnAngle(ESCAPE_TURN_ANGLE, NULL);
+		line = TRUE;
+	} else if (turn == SUMO_TURN_RIGHT){
+		TURN_TurnAngle(-ESCAPE_TURN_ANGLE, NULL);
+		line = TRUE;
+	}
+
+	SUMO_StartSumo();
+	(void)xTaskNotifyWait(0UL, SUMO_ALARM_LINE|SUMO_LINE_LEFT|SUMO_LINE_RIGHT, &notify, 0); /* check flags */
+	return line;
+}
+
+static void SumoFSM_Brick(void) {
+  uint32_t notify;
+  SUMO_Turn_t turn;
+
+  if (sumoState != SUMO_STATE_TURNING){
+	  turn = SumoCheckLine(500);
+  }
+  if ((turn != SUMO_TURN_NOT) && (sumoState != SUMO_STATE_IDLE)){
+	  SumoEscapeLine(turn);
+	  sumoState = SUMO_STATE_IDLE;
+  }
+
+  (void)xTaskNotifyWait(0UL, SUMO_START_SUMO|SUMO_STOP_SUMO|SUMO_ALARM_LINE, &notify, 0); /* check flags */
+
+  if (notify & SUMO_STOP_SUMO) {
+     DRV_SetMode(DRV_MODE_STOP);
+     sumoState = SUMO_STATE_IDLE;
+  }
+
+
   for(;;) { /* breaks */
     switch(sumoState) {
       case SUMO_STATE_IDLE:
-        if ((notifcationValue & SUMO_START_SUMO) && !(notifcationValue & SUMO_ALARM_LINE)) {
-          DRV_SetSpeed(1000, 1000);
+        if ((notify & SUMO_START_SUMO)) {
+          DRV_SetSpeed(SPEED, SPEED);
           DRV_SetMode(DRV_MODE_SPEED);
           sumoState = SUMO_STATE_DRIVING;
           break; /* handle next state */
         }
         return;
       case SUMO_STATE_DRIVING:
-        if (notifcationValue & SUMO_STOP_SUMO) {
-           DRV_SetMode(DRV_MODE_STOP);
-           sumoState = SUMO_STATE_IDLE;
-           break; /* handle next state */
-        }
-        if (notifcationValue & SUMO_ALARM_LINE) {
-          sumoState = SUMO_STATE_TURNING;
-          break; /* handle next state */
-        }
-        return;
-      case SUMO_STATE_TURNING:
-        DRV_SetMode(DRV_MODE_STOP);
-        if (notifcationValue & SUMO_LINE_LEFT){
-        	TURN_TurnAngle(130, NULL);
-        } else if (notifcationValue & SUMO_LINE_RIGHT){
-        	TURN_TurnAngle(-130, NULL);
-        }
-        DRV_SetMode(DRV_MODE_SPEED);
-        sumoState = SUMO_STATE_DRIVING;
+    	return;
         break; /* handle next state */
+
       default: /* should not happen? */
         return;
     } /* switch */
@@ -119,10 +155,9 @@ static void SumoStateMachine(void) {
 static void SumoTask(void* param) {
   sumoState = SUMO_STATE_IDLE;
   for(;;) {
-	if (SUMO_IsRunningSumo()){
-		SumoCheckLine(500);
-	}
-    SumoStateMachine();
+
+	  SumoFSM_Brick();
+
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }

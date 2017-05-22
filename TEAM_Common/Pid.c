@@ -416,10 +416,10 @@ void PID_Deinit(void) {
 void PID_Init(void) {
   /*! \todo determine your PID values */
 
-  speedLeftConfig.pFactor100 = 2000;
-  speedLeftConfig.iFactor100 = 80;
-  speedLeftConfig.dFactor100 = 0;
-  speedLeftConfig.iAntiWindup = 120000;
+  speedLeftConfig.pFactor100 = 1500;
+  speedLeftConfig.iFactor100 = 5;
+  speedLeftConfig.dFactor100 = 1;
+  speedLeftConfig.iAntiWindup = 40000;
   speedLeftConfig.maxSpeedPercent = 100;
 
   speedLeftConfig.lastError = 0;
@@ -440,9 +440,9 @@ void PID_Init(void) {
   lineFwConfig.lastError = 0;
   lineFwConfig.integral = 0;
 
-  posLeftConfig.pFactor100 = 1000;
-  posLeftConfig.iFactor100 = 2;
-  posLeftConfig.dFactor100 = 50;
+  posLeftConfig.pFactor100 = 100;
+  posLeftConfig.iFactor100 = 0;
+  posLeftConfig.dFactor100 = 0;
   posLeftConfig.iAntiWindup = 200;
   posLeftConfig.maxSpeedPercent = 40;
 

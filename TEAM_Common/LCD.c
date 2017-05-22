@@ -119,7 +119,7 @@ static LCDMenu_StatusFlags SnakeGameHandler(const struct LCDMenu_MenuItem_ *item
 	  return flags;
 }
 
-/*
+
 uint8_t LCD_HandleRemoteRxMessage(RAPP_MSG_Type type, uint8_t size, uint8_t *data, RNWK_ShortAddrType srcAddr, bool *handled, RPHY_PacketDesc *packet) {
   (void)size;
   (void)packet;
@@ -129,7 +129,7 @@ uint8_t LCD_HandleRemoteRxMessage(RAPP_MSG_Type type, uint8_t size, uint8_t *dat
   } // switch
   return ERR_OK;
 }
-*/
+
 #endif /* PL_CONFIG_HAS_LCD_MENU */
 
 

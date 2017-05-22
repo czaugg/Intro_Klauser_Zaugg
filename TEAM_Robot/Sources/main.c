@@ -58,15 +58,15 @@
 #include "IR6.h"
 #include "BitIoLdd11.h"
 #include "Q4CLeft.h"
+#include "C11.h"
+#include "BitIoLdd14.h"
 #include "C12.h"
 #include "BitIoLdd16.h"
+#include "C24.h"
 #include "C23.h"
+#include "BitIoLdd15.h"
 #include "BitIoLdd17.h"
 #include "Q4CRight.h"
-#include "C13.h"
-#include "BitIoLdd18.h"
-#include "C25.h"
-#include "BitIoLdd19.h"
 #include "MOTTU.h"
 #include "DIRL.h"
 #include "BitIoLdd12.h"
@@ -79,6 +79,16 @@
 #include "QuadInt.h"
 #include "TimerIntLdd2.h"
 #include "TU_QuadInt.h"
+#include "RNET1.h"
+#include "RF1.h"
+#include "CE1.h"
+#include "BitIoLdd22.h"
+#include "CSN1.h"
+#include "BitIoLdd23.h"
+#include "IRQ1.h"
+#include "ExtIntLdd2.h"
+#include "SM1.h"
+#include "SMasterLdd2.h"
 #include "TMOUT1.h"
 #include "USB1.h"
 #include "CDC1.h"
@@ -110,53 +120,17 @@
 #include "Drive.h"
 #include "Turn.h"
 
-/*
-void loop(void *pvParameters) {
-	bool run = FALSE;
+
+void EventHandlerTask(void *pvParameters) {
+
 	while(1){
 
-		if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED) && run == FALSE){
-			run = TRUE;
-			DRV_SetMode(DRV_MODE_SPEED);
-			DRV_SetSpeed(1000, 1000);
-		} else if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED) && run == TRUE){
-			run = FALSE;
-			DRV_SetMode(DRV_MODE_STOP);
-		}
+		EVNT_HandleEvent(APP_EventHandler, TRUE);
 
-
-
-		if(EVNT_EventIsSetAutoClear(SUMO_ALARM_LINE_RIGHT)){
-			LED_On(2);
-			if (run){
-				DRV_SetSpeed(0,0);
-				vTaskDelay(100/portTICK_PERIOD_MS);
-				TURN_TurnAngle(90, NULL);
-			    TURN_Turn(TURN_STOP, NULL);
-				DRV_SetMode(DRV_MODE_SPEED);
-				DRV_SetSpeed(1000, 1000);
-			}
-		} else {
-			LED_Off(2);
-		}
-		if(EVNT_EventIsSetAutoClear(SUMO_ALARM_LINE_LEFT)){
-			LED_On(1);
-			if (run){
-				DRV_SetSpeed(0,0);
-				vTaskDelay(100/portTICK_PERIOD_MS);
-				TURN_TurnAngle(-90, NULL);
-			    TURN_Turn(TURN_STOP, NULL);
-				DRV_SetMode(DRV_MODE_SPEED);
-				DRV_SetSpeed(1000, 1000);
-			}
-		} else {
-			LED_Off(1);
-		}
-
-		vTaskDelay(10/portTICK_PERIOD_MS);
+		vTaskDelay(pdMS_TO_TICKS(100));
 	}
 }
-*/
+
 
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
 int main(void)
@@ -170,7 +144,7 @@ int main(void)
 
   /* Write your code here */
 
-  //xTaskCreate(loop, "Main loop", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
+  xTaskCreate(EventHandlerTask, "Events", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
   APP_Start();
 
   /* For example: for(;;) { } *

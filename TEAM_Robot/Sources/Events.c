@@ -127,6 +127,10 @@ void FRTOS1_vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 void FRTOS1_vApplicationTickHook(void)
 {
   /* Called for every RTOS tick. */
+#if PL_CONFIG_HAS_MOTOR_TACHO
+	TACHO_Sample();
+#endif
+
 #if PL_CONFIG_HAS_TIMER
   TMR_OnInterrupt();
 #endif
@@ -245,6 +249,57 @@ void SW1_OnInterrupt(void)
 	#if PL_CONFIG_HAS_KBI
 		KEY_OnInterrupt(KEY_BTN1);
 	#endif
+}
+
+/*
+** ===================================================================
+**     Event       :  RF1_OnActivate (module Events)
+**
+**     Component   :  RF1 [nRF24L01]
+**     Description :
+**         Event called before accessing the bus.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void RF1_OnActivate(void)
+{
+  /* Write your code here ... */
+}
+
+/*
+** ===================================================================
+**     Event       :  RF1_OnDeactivate (module Events)
+**
+**     Component   :  RF1 [nRF24L01]
+**     Description :
+**         Event called before releasing the bus.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void RF1_OnDeactivate(void)
+{
+  /* Write your code here ... */
+}
+
+/*
+** ===================================================================
+**     Event       :  RNET1_OnRadioEvent (module Events)
+**
+**     Component   :  RNET1 [RNet]
+**     Description :
+**         Event created for various radio states, like timeout, ack
+**         received, data sent, ...
+**     Parameters  :
+**         NAME            - DESCRIPTION
+**         event           - 
+**     Returns     : Nothing
+** ===================================================================
+*/
+void RNET1_OnRadioEvent(RNET1_RadioEvent event)
+{
+  /* Write your code here ... */
 }
 
 /* END Events */

@@ -83,6 +83,9 @@
 #if PL_HAS_DISTANCE_SENSOR
   #include "Distance.h"
 #endif
+#if PL_CONFIG_HAS_SUMO
+  #include "Sumo.h"
+#endif
 #include "KIN1.h"
 #include "TmDt1.h"
 
@@ -285,6 +288,10 @@ static const CLS1_ParseCommandCallback CmdParserTable[] =
 #if PL_HAS_DISTANCE_SENSOR
   DIST_ParseCommand,
 #endif
+#if PL_CONFIG_HAS_SUMO
+  SUMO_ParseCommand,
+#endif
+
   NULL /* Sentinel */
 };
 
@@ -388,7 +395,7 @@ static void ShellTask(void *pvParameters) {
       }
     }
 #endif /* PL_CONFIG_HAS_SHELL_QUEUE */
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(50));
   } /* for */
 }
 #endif /* PL_CONFIG_HAS_RTOS */

@@ -42,6 +42,9 @@
 #if PL_CONFIG_HAS_LCD_MENU
   #include "LCD.h"
 #endif
+#if PL_CONFIG_HAS_SUMO
+  #include "Sumo.h"
+#endif
 
 #if PL_CONFIG_HAS_EVENTS
 
@@ -53,8 +56,9 @@ void APP_EventHandler(EVNT_Handle event) {
 	  BUZ_PlayTune(BUZ_TUNE_WELCOME);
     break;
   case EVNT_SW1_PRESSED:
-	  CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
+	  //CLS1_SendStr("SW1 pressed!\n", CLS1_GetStdio()->stdOut);
 	  BUZ_PlayTune(BUZ_TUNE_BUTTON);
+	  SUMO_StartStopSumo();
 	  break;
   case EVNT_SW1_LPRESSED:
 	  BUZ_PlayTune(BUZ_TUNE_BUTTON_LONG);
