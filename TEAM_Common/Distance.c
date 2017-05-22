@@ -37,6 +37,8 @@
   #include "TofCE3.h"
   #include "TofCE4.h"
 #endif
+#include "LED.h"
+#include "Buzzer.h"
 
 #if PL_HAS_TOF_SENSOR
 
@@ -88,11 +90,12 @@ typedef struct {
 
 static DIST_ToF_DeviceDesc ToFDevice[VL_NOF_DEVICES]; /* ToF sensor distance in millimeters */
 static VL6180X_Device DIST_ToF_Devices[] = {
-  {VL6180X_DEFAULT_I2C_ADDRESS+1, VL6180X_SCALING_DEFAULT, DIST_TOF_CEPinAction_1},
-  {VL6180X_DEFAULT_I2C_ADDRESS+2, VL6180X_SCALING_DEFAULT, DIST_TOF_CEPinAction_2},
-  {VL6180X_DEFAULT_I2C_ADDRESS+3, VL6180X_SCALING_DEFAULT, DIST_TOF_CEPinAction_3},
-  {VL6180X_DEFAULT_I2C_ADDRESS+4, VL6180X_SCALING_DEFAULT, DIST_TOF_CEPinAction_4},
+  {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+1, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_1},
+  {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+2, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_2},
+  {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+3, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_3},
+  {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+4, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_4},
 };
+
 
 typedef enum {
   DIST_TOF_REAR = 0,
@@ -140,8 +143,8 @@ static uint16_t DIST_GetToFDistance(DIST_SensorPosition pos) {
 }
 #endif
 
-uint8_t DIST_GetDistance(DIST_Sensor sensor) {
-  uint8_t val = 0;
+uint16_t DIST_GetDistance(DIST_Sensor sensor) {
+  uint16_t val = 0;
 
   switch(sensor) {
   case DIST_SENSOR_FRONT:
@@ -609,10 +612,22 @@ static uint8_t InitToF(void) {
   return ERR_OK;
 }
 
+
+bool newVal = FALSE;
+bool DIST_NewVal(void){
+	if (newVal){
+		newVal = FALSE;
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
 static void TofTask(void *param) {
   uint8_t res;
   int errCntr = 0;
   int i;
+  int count;
   bool initDevices = TRUE;
 
   (void)param;
@@ -644,7 +659,31 @@ static void TofTask(void *param) {
       }
       ToFDevice[i].mm = range;
     } /* for */
+
+    newVal = TRUE;
+
+#if 1 || TOF_DEBUG
+    for (i = 0; i < 100; i++) {
+		count++;
+		if (ToFDevice[DIST_TOF_LEFT].mm > 0) {
+			if (count % (ToFDevice[DIST_TOF_LEFT].mm / 10) == 0) {
+				LED_Neg(1);
+			}
+		} else {
+			LED_Off(1);
+		}
+		if (ToFDevice[DIST_TOF_RIGHT].mm > 0) {
+			if (count % (ToFDevice[DIST_TOF_RIGHT].mm / 10) == 0) {
+				LED_Neg(2);
+			}
+		} else {
+			LED_Off(2);
+		}
+		vTaskDelay(pdMS_TO_TICKS(10));
+    }
+#else
     vTaskDelay(pdMS_TO_TICKS(50));
+#endif
   }
 }
 #endif /* PL_HAS_TOF_SENSOR */
@@ -654,7 +693,7 @@ void DIST_Deinit(void) {
 
 void DIST_Init(void) {
 #if PL_HAS_TOF_SENSOR
-  if (xTaskCreate(TofTask, "ToF", 1000/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+2, NULL) != pdPASS) {
+  if (xTaskCreate(TofTask, "ToF", 1000/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+5, NULL) != pdPASS) {
     for(;;){} /* error */
   }
 #endif

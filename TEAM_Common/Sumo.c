@@ -75,17 +75,17 @@ static SUMO_Turn_t SumoCheckLine(uint16_t lineThreshold){
 	uint16_t refSens[REF_NOF_SENSORS];
 	REF_GetSensorValues(refSens, REF_NOF_SENSORS);
 
-	LED_Off(1);
-	LED_Off(2);
+	//LED_Off(1);
+	//LED_Off(2);
 
 	if (refSens[0] < lineThreshold){
 		(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_LEFT, eSetBits);
-		LED_On(1);
+		//LED_On(1);
 		line = SUMO_TURN_LEFT;
 	}
 	if ((refSens[REF_NOF_SENSORS-1]) < lineThreshold){
 		(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_RIGHT, eSetBits);
-		LED_On(2);
+		//LED_On(2);
 		line = SUMO_TURN_RIGHT;
 	}
 	return line;
@@ -202,7 +202,7 @@ uint8_t SUMO_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_St
 }
 
 void SUMO_Init(void) {
-  if (xTaskCreate(SumoTask, "Sumo", 500/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+2, &sumoTaskHndl) != pdPASS) {
+  if (xTaskCreate(SumoTask, "Sumo", 500/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+4, &sumoTaskHndl) != pdPASS) {
     for(;;){} /* error case only, stay here! */
   }
 }

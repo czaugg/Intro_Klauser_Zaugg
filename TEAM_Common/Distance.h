@@ -21,7 +21,7 @@ typedef enum {
   DIST_SENSOR_RIGHT
 } DIST_Sensor;
 
-uint8_t DIST_GetDistance(DIST_Sensor sensor);
+uint16_t DIST_GetDistance(DIST_Sensor sensor);
 
 #if PL_HAS_SIDE_DISTANCE
 bool DIST_5cmLeftOn(void);
@@ -51,7 +51,7 @@ bool DIST_NearFrontObstacle(int16_t distance);
 bool DIST_NearRearObstacle(int distance);
 bool DIST_NearLeftObstacle(int distance);
 bool DIST_NearRightObstacle(int distance);
-
+bool DIST_NewVal(void);
 /*!
  * \brief Driver initialization.
  */

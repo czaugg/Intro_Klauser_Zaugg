@@ -13,11 +13,12 @@
 #include "WAIT1.h"
 #include "TofPwr.h" /* FET on PTB18, LOW active */
 
-#if 0
-// RANGE_SCALER values for 1x, 2x, 3x scaling - see STSW-IMG003 core/src/vl6180x_api.c (ScalerLookUP[])
-static uint16_t const ScalerValues[] = {0, 253, 127, 84};
+#if VL6180X_CONFIG_SUPPORT_SCALING
+  // RANGE_SCALER values for 1x, 2x, 3x scaling - see STSW-IMG003 core/src/vl6180x_api.c (ScalerLookUP[])
+  static uint16_t const ScalerValues[] = {0, 253, 127, 84};
 #endif
-static uint8_t scaling = 1;
+
+static uint8_t scaling = 3; /* default scaling */
 
 const VL6180X_Device VL6180X_DefaultDevice = { /* default device with default address */
   .deviceAddr = VL6180X_DEFAULT_I2C_ADDRESS,
@@ -25,7 +26,8 @@ const VL6180X_Device VL6180X_DefaultDevice = { /* default device with default ad
   .pinAction = NULL,
 #endif
 #if VL6180X_CONFIG_SUPPORT_SCALING
-  .scale = VL6180X_SCALING_FACTOR_1,
+  .scale = VL6180X_SCALING_FACTOR_3,
+  .ptp_offset = 0,
 #endif
 };
 
@@ -151,8 +153,11 @@ uint8_t VL6180X_ReadRangeSingle(VL6180X_Device *device, int16_t *rangeP) {
     *rangeP = -1;
     return res; /* error */
   }
-  if (val>=0 && val<=255) {
-    *rangeP = val; /* store value */
+  if (val==255) { /* no object measured? */
+    *rangeP = -1;
+    return ERR_OK;
+  } else if (val>=0 && val<255) {
+    *rangeP = val*device->scale; /* store value */
     return ERR_OK;
   }
   *rangeP = -2; /* error */
@@ -260,36 +265,57 @@ uint8_t VL6180X_readLux(VL6180X_Device *device, VL6180X_ALS_GAIN gain, float *pL
   return ERR_OK;
 }
 
-#if 0
-// Set range scaling factor. The sensor uses 1x scaling by default, giving range
-// measurements in units of mm. Increasing the scaling to 2x or 3x makes it give
-// raw values in units of 2 mm or 3 mm instead. In other words, a bigger scaling
-// factor increases the sensor's potential maximum range but reduces its
-// resolution.
+#if VL6180X_CONFIG_SUPPORT_SCALING
+/* Set range scaling factor. The sensor uses 1x scaling by default, giving range
+ * measurements in units of mm. Increasing the scaling to 2x or 3x makes it give
+ * raw values in units of 2 mm or 3 mm instead. In other words, a bigger scaling
+ * factor increases the sensor's potential maximum range but reduces its
+ * resolution.
+*/
+/* Implemented using ST's VL6180X API as a reference (STSW-IMG003); see
+ * VL6180x_UpscaleSetScaling() in vl6180x_api.c.
+ * https://github.com/pololu/vl6180x-arduino/blob/master/VL6180X.cpp
+ */
+uint8_t VL6180X_setScaling(VL6180X_Device *device, uint8_t new_scaling) {
+  uint8_t const DefaultCrosstalkValidHeight = 20; /* default value of SYSRANGE__CROSSTALK_VALID_HEIGHT */
+  uint8_t rce, res;
 
-// Implemented using ST's VL6180X API as a reference (STSW-IMG003); see
-// VL6180x_UpscaleSetScaling() in vl6180x_api.c.
-void VL6180X::setScaling(uint8_t new_scaling)
-{
-  uint8_t const DefaultCrosstalkValidHeight = 20; // default value of SYSRANGE__CROSSTALK_VALID_HEIGHT
-
-  // do nothing if scaling value is invalid
-  if (new_scaling < 1 || new_scaling > 3) { return; }
+  /* do nothing if scaling value is invalid */
+  if (new_scaling < VL6180X_SCALING_FACTOR_1 || new_scaling > VL6180X_SCALING_FACTOR_3) {
+    return ERR_RANGE;
+  }
 
   scaling = new_scaling;
-  writeReg16Bit(RANGE_SCALER, ScalerValues[scaling]);
+  res = VL6180X_WriteReg16(device, RANGE_SCALER, ScalerValues[scaling]);
+  if (res!=ERR_OK) {
+    return res;
+  }
 
-  // apply scaling on part-to-part offset
-  writeReg(VL6180X::SYSRANGE__PART_TO_PART_RANGE_OFFSET, ptp_offset / scaling);
+  /* apply scaling on part-to-part offset */
+  res = VL6180X_WriteReg8(device, SYSRANGE__PART_TO_PART_RANGE_OFFSET, device->ptp_offset / scaling);
+  if (res!=ERR_OK) {
+    return res;
+  }
 
-  // apply scaling on CrossTalkValidHeight
-  writeReg(VL6180X::SYSRANGE__CROSSTALK_VALID_HEIGHT, DefaultCrosstalkValidHeight / scaling);
+  /* apply scaling on CrossTalkValidHeight */
+  res = VL6180X_WriteReg8(device, SYSRANGE__CROSSTALK_VALID_HEIGHT, DefaultCrosstalkValidHeight / scaling);
+  if (res!=ERR_OK) {
+    return res;
+  }
 
-  // This function does not apply scaling to RANGE_IGNORE_VALID_HEIGHT.
+  /* This function does not apply scaling to RANGE_IGNORE_VALID_HEIGHT. */
 
-  // enable early convergence estimate only at 1x scaling
-  uint8_t rce = readReg(VL6180X::SYSRANGE__RANGE_CHECK_ENABLES);
-  writeReg(VL6180X::SYSRANGE__RANGE_CHECK_ENABLES, (rce & 0xFE) | (scaling == 1));
+  /* enable early convergence estimate only at 1x scaling */
+  res = VL6180X_ReadReg8(device, SYSRANGE__RANGE_CHECK_ENABLES, &rce);
+  if (res!=ERR_OK) {
+    return res;
+  }
+  res = VL6180X_WriteReg8(device, SYSRANGE__RANGE_CHECK_ENABLES, (rce&0xFE) | (scaling==VL6180X_SCALING_FACTOR_1));
+  if (res!=ERR_OK) {
+    return res;
+  }
+  device->scale = scaling;
+  return ERR_OK;
 }
 #endif
 
@@ -370,157 +396,189 @@ static uint8_t VL6180X_ConfigureDefaults(VL6180X_Device *device) {
 /* Initialize sensor with settings from ST application note AN4545, section 9 -
    "Mandatory : private registers" */
 static uint8_t VL6180X_InitDevice(VL6180X_Device *device) {
-  uint8_t res;
+  uint8_t res, val;
 
-  res = VL6180X_WriteReg8(device, 0x207, 0x01);
+#if VL6180X_CONFIG_SUPPORT_SCALING
+  res = VL6180X_ReadReg8(device, SYSRANGE__PART_TO_PART_RANGE_OFFSET, &device->ptp_offset);
+  if (res!=ERR_OK) {
+    device->ptp_offset = 0; /* reset value to default in error case */
+  }
+#endif
+
+  res = VL6180X_ReadReg8(device, SYSTEM__FRESH_OUT_OF_RESET, &val);
   if (res!=ERR_OK) {
     VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
     return res;
   }
-  res = VL6180X_WriteReg8(device, 0x208, 0x01);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x096, 0x00);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x097, 0xFD); /* RANGE_SCALER = 253 */
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0E3, 0x00);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0E4, 0x04);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0E5, 0x02);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0E6, 0x01);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0E7, 0x03);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0F5, 0x02);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0D9, 0x05);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0DB, 0xCE);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0DC, 0x03);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0DD, 0xF8);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x09F, 0x00);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0A3, 0x3C);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0B7, 0x00);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0BB, 0x3C);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0B2, 0x09);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0CA, 0x09);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x198, 0x01);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x1B0, 0x17);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x1AD, 0x00);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x0FF, 0x05);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x100, 0x05);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x199, 0x05);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x1A6, 0x1B);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x1AC, 0x3E);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x1A7, 0x1F);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
-  }
-  res = VL6180X_WriteReg8(device, 0x030, 0x00);
-  if (res!=ERR_OK) {
-    VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
-    return res;
+  if (val==1)  {
+    scaling = 1;
+
+    res = VL6180X_WriteReg8(device, 0x207, 0x01);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x208, 0x01);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x096, 0x00);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x097, 0xFD); /* RANGE_SCALER = 253 */
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0E3, 0x00);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0E4, 0x04);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0E5, 0x02);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0E6, 0x01);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0E7, 0x03);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0F5, 0x02);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0D9, 0x05);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0DB, 0xCE);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0DC, 0x03);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0DD, 0xF8);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x09F, 0x00);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0A3, 0x3C);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0B7, 0x00);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0BB, 0x3C);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0B2, 0x09);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0CA, 0x09);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x198, 0x01);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x1B0, 0x17);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x1AD, 0x00);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x0FF, 0x05);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x100, 0x05);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x199, 0x05);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x1A6, 0x1B);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x1AC, 0x3E);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x1A7, 0x1F);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+    res = VL6180X_WriteReg8(device, 0x030, 0x00);
+    if (res!=ERR_OK) {
+      VL6180X_OnError(VL6180X_ON_ERROR_INIT_DEVICE);
+      return res;
+    }
+  } else {
+    // Sensor has already been initialized, so try to get scaling settings by
+    // reading registers.
+    uint16_t s;
+
+    res = VL6180X_ReadReg16(device, RANGE_SCALER, &s);
+
+    if      (s == ScalerValues[3]) { scaling = 3; }
+    else if (s == ScalerValues[2]) { scaling = 2; }
+    else                           { scaling = 1; }
+
+    // Adjust the part-to-part range offset value read earlier to account for
+    // existing scaling. If the sensor was already in 2x or 3x scaling mode,
+    // precision will be lost calculating the original (1x) offset, but this can
+    // be resolved by resetting the sensor and Arduino again.
+    device->ptp_offset *= scaling;
   }
   return ERR_OK;
 }
@@ -536,6 +594,12 @@ uint8_t VL6180X_InitAndConfigureDevice(VL6180X_Device *device) {
   if (res!=ERR_OK) {
     return res;
   }
+#if VL6180X_CONFIG_SUPPORT_SCALING
+  res = VL6180X_setScaling(device, VL6180X_SCALING_FACTOR_3);
+  if (res!=ERR_OK) {
+    return res;
+  }
+#endif
   return res;
 }
 
