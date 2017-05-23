@@ -88,6 +88,8 @@ enum regAddr {
   RESULT__RANGE_RETURN_CONV_TIME        = 0x07C, // 32-bit
   RESULT__RANGE_REFERENCE_CONV_TIME     = 0x080, // 32-bit
 
+  RANGE_SCALER = 0x096, // 16-bit - see STSW-IMG003 core/inc/vl6180x_def.h
+
   READOUT__AVERAGING_SAMPLE_PERIOD      = 0x10A,
   FIRMWARE__BOOTUP                      = 0x119,
   FIRMWARE__RESULT_SCALER               = 0x120,
@@ -141,11 +143,16 @@ typedef struct {
   uint8_t deviceAddr; /* device address, default would be VL6180X_DEFAULT_I2C_ADDRESS */
 #if VL6180X_CONFIG_SUPPORT_SCALING
   uint8_t scale; /* scaling factor: 1, 2 or 3 */
+  uint8_t ptp_offset; /* SYSRANGE__PART_TO_PART_RANGE_OFFSET */
 #endif
 #if VL6180X_CONFIG_MULTIPLE_DEVICES
   void (*pinAction)(VL6180X_PIN_ACTION action); /* callback to perform pin actions */
 #endif
 } VL6180X_Device;
+
+#if VL6180X_CONFIG_SUPPORT_SCALING
+  uint8_t VL6180X_setScaling(VL6180X_Device *device, uint8_t new_scaling);
+#endif
 
 extern const VL6180X_Device VL6180X_DefaultDevice; /* default device with default address */
 
