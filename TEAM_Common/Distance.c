@@ -42,9 +42,8 @@
 
 #if PL_HAS_TOF_SENSOR
 
-#define VL_NOF_DEVICES 2 /* we have a sensor on each side of the robot */
+#define VL_NOF_DEVICES 4 /* we have a sensor on each side of the robot */
 
-/*
 static void DIST_TOF_CEPinAction_1(VL6180X_PIN_ACTION action) {
   switch(action) {
     case VL6180X_PIN_ACTION_SET_INPUT:  TofCE1_SetInput();  break;
@@ -54,7 +53,6 @@ static void DIST_TOF_CEPinAction_1(VL6180X_PIN_ACTION action) {
     default: break;
   }
 }
-*/
 
 static void DIST_TOF_CEPinAction_2(VL6180X_PIN_ACTION action) {
   switch(action) {
@@ -65,7 +63,7 @@ static void DIST_TOF_CEPinAction_2(VL6180X_PIN_ACTION action) {
     default: break;
   }
 }
-/*
+
 static void DIST_TOF_CEPinAction_3(VL6180X_PIN_ACTION action) {
   switch(action) {
     case VL6180X_PIN_ACTION_SET_INPUT:  TofCE3_SetInput();  break;
@@ -75,7 +73,7 @@ static void DIST_TOF_CEPinAction_3(VL6180X_PIN_ACTION action) {
     default: break;
   }
 }
-*/
+
 static void DIST_TOF_CEPinAction_4(VL6180X_PIN_ACTION action) {
   switch(action) {
     case VL6180X_PIN_ACTION_SET_INPUT:  TofCE4_SetInput();  break;
@@ -92,18 +90,18 @@ typedef struct {
 
 static DIST_ToF_DeviceDesc ToFDevice[VL_NOF_DEVICES]; /* ToF sensor distance in millimeters */
 static VL6180X_Device DIST_ToF_Devices[] = {
-  //{.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+1, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_1},
+  {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+1, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_1},
   {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+2, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_2},
-  //{.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+3, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_3},
+  {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+3, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_3},
   {.ptp_offset=0, .deviceAddr=VL6180X_DEFAULT_I2C_ADDRESS+4, .scale=VL6180X_SCALING_DEFAULT, .pinAction=DIST_TOF_CEPinAction_4},
 };
 
 
 typedef enum {
-  DIST_TOF_REAR = 2,
-  DIST_TOF_RIGHT = 0,
-  DIST_TOF_FRONT = 3,
-  DIST_TOF_LEFT = 1
+  DIST_TOF_REAR = 0,
+  DIST_TOF_RIGHT = 1,
+  DIST_TOF_FRONT = 2,
+  DIST_TOF_LEFT = 3
 } DIST_SensorPosition;
 
 #endif
