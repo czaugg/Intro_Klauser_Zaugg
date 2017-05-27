@@ -24,6 +24,9 @@
 #if PL_CONFIG_HAS_SNAKE_GAME
 #include "Snake.h"
 #endif
+#if PL_CONFIG_IS_SUMO_REMOTE
+#include "RstdIO.h"
+#endif
 
 /*! \todo Add additional includes as needed */
 
@@ -40,6 +43,11 @@ typedef enum {
     LCD_MENU_ID_NUM_VALUE,
 	LCD_MENU_ID_GAMES,
 	LCD_MENU_ID_SNAKE,
+	LCD_MENU_ID_SUMO,
+	LCD_MENU_ID_SUMO_START,
+	LCD_MENU_ID_SUMO_SET_DIR,
+	LCD_MENU_ID_SUMO_SET_LINE,
+	LCD_MENU_ID_SUMO_STOP
 } LCD_MenuIDs;
 
 static LCDMenu_StatusFlags ValueChangeHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
@@ -87,6 +95,98 @@ static LCDMenu_StatusFlags BackLightMenuHandler(const struct LCDMenu_MenuItem_ *
   return flags;
 }
 
+
+static LCDMenu_StatusFlags SumoHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
+	static int8_t dir = -1; /* Direction -1 = left, 0 = center, 1 = right */
+	static bool line = TRUE;
+	LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
+	char* cmd1 = NULL;
+	char* cmd2 = NULL;
+	char* cmd3 = NULL;
+	unsigned char buf[32];
+
+	if ((event == LCDMENU_EVENT_RIGHT) || (event == LCDMENU_EVENT_ENTER)) {
+		switch(item->id){
+			case LCD_MENU_ID_SUMO_START:
+				cmd1 = "sumo start";
+				switch (dir){
+					case -1:
+						cmd2 = " left";
+						break;
+					case 0:
+						cmd2 = " center";
+						break;
+					case 1:
+						cmd2 = " right";
+						break;
+				}
+				if (line){
+					cmd3 = " line";
+				} else {
+					cmd3 = " noline";
+				}
+				break;
+			case LCD_MENU_ID_SUMO_SET_DIR:
+				switch (dir){
+					case -1:
+						dir = 0;
+						break;
+					case 0:
+						dir = 1;
+						break;
+					case 1:
+						dir = -1;
+						break;
+					default:
+						dir = -1;
+						break;
+				}
+				break;
+			case LCD_MENU_ID_SUMO_SET_LINE:
+				line = !line;
+				break;
+			case LCD_MENU_ID_SUMO_STOP:
+				cmd1 = "sumo stop";
+				break;
+		}
+		if (cmd1 != NULL) {
+			UTIL1_strcpy(buf, sizeof(buf), cmd1);
+			if (cmd2 != NULL) {
+				UTIL1_strcat(buf, sizeof(buf), cmd2);
+			}
+			if (cmd3 != NULL) {
+				UTIL1_strcat(buf, sizeof(buf), cmd3);
+			}
+			UTIL1_strcat(buf, sizeof(buf), "\n");
+	    	RSTDIO_SendToTxStdio(RSTDIO_QUEUE_TX_IN, buf, UTIL1_strlen((char*)buf));
+		}
+	    flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
+
+	} else if (event==LCDMENU_EVENT_GET_TEXT && dataP!=NULL) {
+		switch(item->id){
+			case LCD_MENU_ID_SUMO_SET_DIR:
+				if (dir == -1){
+					*dataP = "Start Left";
+				} else if (dir == 0) {
+					*dataP = "Start Center";
+				} else if (dir == 1) {
+					*dataP = "Start Right";
+				}
+				break;
+			case LCD_MENU_ID_SUMO_SET_LINE:
+				if (line){
+					*dataP = "Detect Line";
+				} else {
+					*dataP = "No Line";
+				}
+				break;
+		}
+		flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
+	}
+
+	return flags;
+}
+
 static LCDMenu_StatusFlags SnakeGameHandler(const struct LCDMenu_MenuItem_*, LCDMenu_EventType, void **);
 
 static const LCDMenu_MenuItem menus[] =
@@ -96,9 +196,17 @@ static const LCDMenu_MenuItem menus[] =
       {LCD_MENU_ID_NUM_VALUE,              	1,   	1,   	LCD_MENU_ID_MAIN,      	LCD_MENU_ID_NONE,              	NULL,           ValueChangeHandler,        	LCDMENU_MENU_FLAGS_EDITABLE},
 #if PL_CONFIG_HAS_SNAKE_GAME
 	  {LCD_MENU_ID_GAMES,					0,		1,		LCD_MENU_ID_NONE, 		LCD_MENU_ID_SNAKE,				"Games",		NULL,						LCDMENU_MENU_FLAGS_NONE},
-	  {LCD_MENU_ID_SNAKE,					2,   	0,		LCD_MENU_ID_MAIN,		LCD_MENU_ID_NONE,				"Snake",		SnakeGameHandler, 		  		LCDMENU_MENU_FLAGS_NONE},
+	  {LCD_MENU_ID_SNAKE,					2,   	0,		LCD_MENU_ID_MAIN,		LCD_MENU_ID_NONE,				"Snake",		SnakeGameHandler, 		  	LCDMENU_MENU_FLAGS_NONE},
+#endif
+#if PL_CONFIG_IS_SUMO_REMOTE
+	  {LCD_MENU_ID_SUMO,					0,		2,		LCD_MENU_ID_NONE, 		LCD_MENU_ID_SUMO_STOP,			"Sumo",			NULL,						LCDMENU_MENU_FLAGS_NONE},
+	  {LCD_MENU_ID_SUMO_STOP,				3,		0,		LCD_MENU_ID_SUMO,		LCD_MENU_ID_NONE,				"Stop Sumo",	SumoHandler,				LCDMENU_MENU_FLAGS_NONE},
+	  {LCD_MENU_ID_SUMO_START,				3,		1,		LCD_MENU_ID_SUMO,		LCD_MENU_ID_NONE,				"Start Sumo",	SumoHandler,				LCDMENU_MENU_FLAGS_NONE},
+	  {LCD_MENU_ID_SUMO_SET_DIR,			3,		2,		LCD_MENU_ID_SUMO,		LCD_MENU_ID_NONE,				NULL,			SumoHandler,				LCDMENU_MENU_FLAGS_NONE},
+	  {LCD_MENU_ID_SUMO_SET_LINE,			3,		3,		LCD_MENU_ID_SUMO,		LCD_MENU_ID_NONE,				NULL,			SumoHandler,				LCDMENU_MENU_FLAGS_NONE},
 #endif
 };
+
 
 static LCDMenu_StatusFlags SnakeGameHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
 	  LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;

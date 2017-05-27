@@ -54,6 +54,7 @@
 //#define PL_LOCAL_CONFIG_HAS_LCD_DISABLED                  /* disable LCD */
 //#define PL_LOCAL_CONFIG_HAS_LCD_MENU_DISABLED             /* disable LCD menu */
 //#define PL_LOCAL_CONFIG_HAS_SNAKE_GAME_DISABLED           /* disable snake game */
+//#define PL_LOCAL_CONFIG_IS_SUMO_RMEOTE_DISABLED
 
 /* robot hardware functionality */
 #define PL_LOCAL_CONFIG_HAS_MOTOR_DISABLED                /* disable motor */

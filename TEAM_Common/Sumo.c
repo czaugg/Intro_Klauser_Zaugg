@@ -116,6 +116,7 @@ static void SumoFSM_Brick(void) {
   uint32_t notify;
   SUMO_Turn_t turn;
 
+  /* Handle Line */
   if (sumoState != SUMO_STATE_TURNING){
 	  turn = SumoCheckLine(500);
   }
@@ -124,14 +125,16 @@ static void SumoFSM_Brick(void) {
 	  sumoState = SUMO_STATE_IDLE;
   }
 
+  /* Get Flags */
   (void)xTaskNotifyWait(0UL, SUMO_START_SUMO|SUMO_STOP_SUMO|SUMO_ALARM_LINE, &notify, 0); /* check flags */
 
+  /* Check Stop Flag */
   if (notify & SUMO_STOP_SUMO) {
      DRV_SetMode(DRV_MODE_STOP);
      sumoState = SUMO_STATE_IDLE;
   }
 
-
+  /* State Machine */
   for(;;) { /* breaks */
     switch(sumoState) {
       case SUMO_STATE_IDLE:
