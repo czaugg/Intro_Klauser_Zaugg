@@ -209,6 +209,9 @@ static const SHELL_IODesc ios[] =
 #if SHELL_CONFIG_HAS_SHELL_RTT
   //{&RTT1_stdio, RTT1_DefaultShellBuffer, sizeof(RTT1_DefaultShellBuffer)},
 #endif
+#if RNET_CONFIG_REMOTE_STDIO
+  {&RSTDIO_stdio, RSTDIO_DefaultShellBuffer, sizeof(RSTDIO_DefaultShellBuffer)}
+#endif
   /*! \todo Extend as needed */
 };
 
@@ -375,6 +378,9 @@ static void ShellTask(void *pvParameters) {
     for(i=0;i<sizeof(ios)/sizeof(ios[0]);i++) {
       (void)CLS1_ReadAndParseWithCommandTable(ios[i].buf, ios[i].bufSize, ios[i].stdio, CmdParserTable);
     }
+#if PL_CONFIG_HAS_RADIO
+    RSTDIO_Print(SHELL_GetStdio());
+#endif
 #if PL_CONFIG_HAS_SHELL_QUEUE && PL_CONFIG_SQUEUE_SINGLE_CHAR
     {
         /*! \todo Handle shell queue */
@@ -384,6 +390,7 @@ static void ShellTask(void *pvParameters) {
         SHELL_stdio.stdOut(ch);
       }
     }
+
 #elif PL_CONFIG_HAS_SHELL_QUEUE /* !PL_CONFIG_SQUEUE_SINGLE_CHAR */
     {
       const unsigned char *msg;

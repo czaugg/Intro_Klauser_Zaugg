@@ -151,12 +151,12 @@ static LCDMenu_StatusFlags SumoHandler(const struct LCDMenu_MenuItem_ *item, LCD
 		}
 		if (cmd1 != NULL) {
 			UTIL1_strcpy(buf, sizeof(buf), cmd1);
-			if (cmd2 != NULL) {
+			/*if (cmd2 != NULL) {
 				UTIL1_strcat(buf, sizeof(buf), cmd2);
 			}
 			if (cmd3 != NULL) {
 				UTIL1_strcat(buf, sizeof(buf), cmd3);
-			}
+			}*/
 			UTIL1_strcat(buf, sizeof(buf), "\n");
 	    	RSTDIO_SendToTxStdio(RSTDIO_QUEUE_TX_IN, buf, UTIL1_strlen((char*)buf));
 		}
