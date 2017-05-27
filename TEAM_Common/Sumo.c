@@ -112,6 +112,12 @@ static bool SumoEscapeLine(SUMO_Turn_t turn){
 	return line;
 }
 
+static void SumoSearch(void){
+	if (DIST_NewVal()){
+
+	}
+}
+
 static void SumoFSM_Brick(void) {
   uint32_t notify;
   SUMO_Turn_t turn;
