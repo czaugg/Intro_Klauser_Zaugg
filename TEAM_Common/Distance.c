@@ -666,7 +666,7 @@ static void TofTask(void *param) {
 
     newVal = TRUE;
 
-#if 1 || TOF_DEBUG
+#if 0 || TOF_DEBUG
     for (i = 0; i < 100; i++) {
 		count++;
 		if (ToFDevice[DIST_TOF_LEFT].mm > 0) {
@@ -686,7 +686,7 @@ static void TofTask(void *param) {
 		vTaskDelay(pdMS_TO_TICKS(10));
     }
 #else
-    vTaskDelay(pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(100));
 #endif
   }
 }
@@ -697,7 +697,7 @@ void DIST_Deinit(void) {
 
 void DIST_Init(void) {
 #if PL_HAS_TOF_SENSOR
-  if (xTaskCreate(TofTask, "ToF", 1000/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+5, NULL) != pdPASS) {
+  if (xTaskCreate(TofTask, "ToF", 1000/sizeof(StackType_t), NULL, tskIDLE_PRIORITY+2, NULL) != pdPASS) {
     for(;;){} /* error */
   }
 #endif

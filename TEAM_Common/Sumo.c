@@ -14,16 +14,25 @@
 #include "Turn.h"
 #include "CLS1.h"
 #include "LED.h"
+#include "Buzzer.h"
+#include "Distance.h"
 
 #define DIR_LEFT 1
 #define DIR_RIGHT 2
 #define SPEED 2500
+#define MAXSPEED 2000
+#define TURN 0.7f
 #define ESCAPE_TURN_ANGLE 130
+bool handleLine = FALSE;
 
 typedef enum {
   SUMO_STATE_IDLE,
   SUMO_STATE_DRIVING,
   SUMO_STATE_TURNING,
+  SUMO_STATE_SEARCHING,
+  SUMO_STATE_ATTACK,
+  SUMO_STATE_COUNTDOWN,
+  SUMO_STATE_WIGGLE
 } SUMO_State_t;
 
 typedef enum {
@@ -36,6 +45,13 @@ typedef enum {
 	SUMO_TURN_LEFT,
 	SUMO_TURN_RIGHT
 } SUMO_Turn_t;
+
+typedef enum {
+	OPP_LOST,
+	OPP_LEFT,
+	OPP_RIGHT,
+	OPP_CENTER
+} OPP_POS_t;
 
 static SUMO_State_t sumoState = SUMO_STATE_IDLE;
 static SUMO_State_t sumoStrategy = SUMO_STRATEGY_BRICK;
@@ -79,12 +95,12 @@ static SUMO_Turn_t SumoCheckLine(uint16_t lineThreshold){
 	//LED_Off(2);
 
 	if (refSens[0] < lineThreshold){
-		(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_LEFT, eSetBits);
+		//(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_LEFT, eSetBits);
 		//LED_On(1);
 		line = SUMO_TURN_LEFT;
 	}
 	if ((refSens[REF_NOF_SENSORS-1]) < lineThreshold){
-		(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_RIGHT, eSetBits);
+		//(void)xTaskNotify(sumoTaskHndl, SUMO_ALARM_LINE & SUMO_LINE_RIGHT, eSetBits);
 		//LED_On(2);
 		line = SUMO_TURN_RIGHT;
 	}
@@ -125,14 +141,14 @@ static void SumoFSM_Brick(void) {
 	  sumoState = SUMO_STATE_IDLE;
   }
 
-  /* Get Flags */
-  (void)xTaskNotifyWait(0UL, SUMO_START_SUMO|SUMO_STOP_SUMO|SUMO_ALARM_LINE, &notify, 0); /* check flags */
-
   /* Check Stop Flag */
   if (notify & SUMO_STOP_SUMO) {
      DRV_SetMode(DRV_MODE_STOP);
      sumoState = SUMO_STATE_IDLE;
   }
+
+  /* Get Flags */
+  (void)xTaskNotifyWait(0UL, SUMO_START_SUMO|SUMO_STOP_SUMO|SUMO_ALARM_LINE, &notify, 0); /* check flags */
 
   /* State Machine */
   for(;;) { /* breaks */
@@ -155,11 +171,132 @@ static void SumoFSM_Brick(void) {
   } /* for */
 }
 
+
+static OPP_POS_t SumoSearch(void) {
+	uint16_t left, right;
+	OPP_POS_t opp;
+
+	left = DIST_GetDistance(DIST_SENSOR_LEFT);
+	right = DIST_GetDistance(DIST_SENSOR_RIGHT);
+
+	if (left != 0xFFFF){
+		if (right != 0xFFFF){
+			opp = OPP_CENTER;
+		} else {
+			opp = OPP_LEFT;
+		}
+	} else {
+		if (right != 0xFFFF){
+			opp = OPP_RIGHT;
+		} else {
+			opp = OPP_LOST;
+		}
+	}
+	return opp;
+}
+
+static void SumoCountdown(void){
+	uint8_t i;
+	for (i = 0; i < 5; i++){
+		BUZ_Beep(500,200);
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
+static void SumoFindOpp(SUMO_Turn_t turn){
+	if (turn == SUMO_TURN_LEFT){
+		TURN_TurnAngle(-10, NULL);
+	} else {
+		TURN_TurnAngle(10, NULL);
+	}
+}
+
+static void SumoAttack(OPP_POS_t opp){
+	switch(opp){
+		case OPP_CENTER:
+			DRV_SetSpeed(MAXSPEED, MAXSPEED);
+			break;
+		case OPP_LEFT:
+			DRV_SetSpeed(MAXSPEED * TURN, MAXSPEED / TURN);
+			break;
+		case OPP_RIGHT:
+			DRV_SetSpeed(MAXSPEED / TURN, MAXSPEED * TURN);
+			break;
+	}
+}
+
+static void SumoFSM_Attack(void){
+	uint32_t notify;
+	OPP_POS_t opp;
+	SUMO_Turn_t turn;
+
+
+	  /* Handle Line */
+	if (handleLine) {
+		if (sumoState != SUMO_STATE_TURNING) {
+			turn = SumoCheckLine(500);
+		}
+		if ((turn != SUMO_TURN_NOT) && (sumoState != SUMO_STATE_IDLE)) {
+			SumoEscapeLine(turn);
+			sumoState = SUMO_STATE_SEARCHING;
+			opp = OPP_LOST;
+		}
+	}
+
+	  /* Check Stop Flag */
+	  if (notify & SUMO_STOP_SUMO) {
+	     DRV_SetMode(DRV_MODE_STOP);
+	     sumoState = SUMO_STATE_IDLE;
+	  }
+
+	/* Get Flags */
+	(void) xTaskNotifyWait(0UL, SUMO_START_SUMO | SUMO_STOP_SUMO | SUMO_ALARM_LINE, &notify, 0); /* check flags */
+
+	/* State Machine */
+	for (;;) { /* breaks */
+		switch (sumoState) {
+		case SUMO_STATE_IDLE:
+			if ((notify & SUMO_START_SUMO)) {
+				sumoState = SUMO_STATE_COUNTDOWN;
+				break; /* handle next state */
+			}
+			return;
+		case SUMO_STATE_COUNTDOWN:
+			SumoCountdown();
+			sumoState = SUMO_STATE_SEARCHING;
+			break;
+		case SUMO_STATE_SEARCHING:
+			opp = SumoSearch();
+			if (opp == OPP_LOST){
+				SumoFindOpp(SUMO_TURN_LEFT);
+				return;
+			} else {
+				sumoState = SUMO_STATE_ATTACK;
+				DRV_SetMode(DRV_MODE_SPEED);
+				break;
+			}
+		case SUMO_STATE_ATTACK:
+			opp = SumoSearch();
+			if (opp != OPP_LOST) {
+				SumoAttack(opp);
+			} else {
+				sumoState = SUMO_STATE_SEARCHING;
+				break;
+			}
+			return;
+		default: /* should not happen? */
+			return;
+		} /* switch */
+	} /* for */
+}
+
 static void SumoTask(void* param) {
   sumoState = SUMO_STATE_IDLE;
+
   for(;;) {
 
-	  SumoFSM_Brick();
+	  SumoFSM_Attack();
+	  //SumoFSM_Brick();
 
     vTaskDelay(pdMS_TO_TICKS(10));
   }
