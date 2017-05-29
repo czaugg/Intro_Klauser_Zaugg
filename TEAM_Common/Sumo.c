@@ -122,9 +122,8 @@ static SUMO_Turn_t SumoCheckLine(uint16_t lineThreshold){
 }
 
 static bool SumoEscapeLine(SUMO_Turn_t turn){
-	uint32_t notify;
-
 	bool line = FALSE;
+
 	DRV_SetSpeed(-SPEED, -SPEED);
 	vTaskDelay(200/portTICK_PERIOD_MS);
 	DRV_SetMode(DRV_MODE_STOP);
@@ -219,6 +218,7 @@ static SUMO_Turn_t SumoFindOpp(SUMO_Turn_t turn){
 	SUMO_Turn_t newTurn = turn;
 	DRV_SetMode(DRV_MODE_SPEED);
 
+	/*
 	if (turn == SUMO_TURN_LEFT){
 		DRV_SetSpeed(-SPEED, SPEED);
 		count++;
@@ -240,6 +240,14 @@ static SUMO_Turn_t SumoFindOpp(SUMO_Turn_t turn){
 			count = 0;
 			newTurn = SUMO_TURN_LEFT;
 		}
+	}
+	*/
+
+	if (turn == SUMO_TURN_LEFT){
+		DRV_SetSpeed(SPEED * TURN, SPEED / TURN);
+	} else {
+
+		DRV_SetSpeed(SPEED / TURN, SPEED * TURN);
 	}
 	return newTurn;
 }
