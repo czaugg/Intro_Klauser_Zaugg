@@ -100,42 +100,27 @@ static LCDMenu_StatusFlags SumoHandler(const struct LCDMenu_MenuItem_ *item, LCD
 	static int8_t dir = -1; /* Direction -1 = left, 0 = center, 1 = right */
 	static bool line = TRUE;
 	LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
-	char* cmd1 = NULL;
-	char* cmd2 = NULL;
-	char* cmd3 = NULL;
+	char* cmd = NULL;
 	unsigned char buf[32];
 
 	if ((event == LCDMENU_EVENT_RIGHT) || (event == LCDMENU_EVENT_ENTER)) {
 		switch(item->id){
 			case LCD_MENU_ID_SUMO_START:
-				cmd1 = "sumo start";
-				switch (dir){
-					case -1:
-						cmd2 = " left";
-						break;
-					case 0:
-						cmd2 = " center";
-						break;
-					case 1:
-						cmd2 = " right";
-						break;
-				}
-				if (line){
-					cmd3 = " line";
-				} else {
-					cmd3 = " noline";
-				}
+				cmd = "sumo startt";
 				break;
 			case LCD_MENU_ID_SUMO_SET_DIR:
 				switch (dir){
 					case -1:
 						dir = 0;
+						cmd = "sumo center";
 						break;
 					case 0:
 						dir = 1;
+						cmd = "sumo right";
 						break;
 					case 1:
 						dir = -1;
+						cmd = "sumo left";
 						break;
 					default:
 						dir = -1;
@@ -144,19 +129,18 @@ static LCDMenu_StatusFlags SumoHandler(const struct LCDMenu_MenuItem_ *item, LCD
 				break;
 			case LCD_MENU_ID_SUMO_SET_LINE:
 				line = !line;
+				if (!line){
+					cmd = "sumo noline";
+				} else {
+					cmd = "sumo line";
+				}
 				break;
 			case LCD_MENU_ID_SUMO_STOP:
-				cmd1 = "sumo stop";
+				cmd = "sumo stopp";
 				break;
 		}
-		if (cmd1 != NULL) {
-			UTIL1_strcpy(buf, sizeof(buf), cmd1);
-			/*if (cmd2 != NULL) {
-				UTIL1_strcat(buf, sizeof(buf), cmd2);
-			}
-			if (cmd3 != NULL) {
-				UTIL1_strcat(buf, sizeof(buf), cmd3);
-			}*/
+		if (cmd != NULL) {
+			UTIL1_strcpy(buf, sizeof(buf), cmd);
 			UTIL1_strcat(buf, sizeof(buf), "\n");
 	    	RSTDIO_SendToTxStdio(RSTDIO_QUEUE_TX_IN, buf, UTIL1_strlen((char*)buf));
 		}

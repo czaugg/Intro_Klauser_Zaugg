@@ -441,11 +441,17 @@ void PID_Init(void) {
   lineFwConfig.integral = 0;
 
   posLeftConfig.pFactor100 = 1000;
+  posLeftConfig.iFactor100 = 0;
+  posLeftConfig.dFactor100 = 0;
+  posLeftConfig.iAntiWindup = 200;
+  posLeftConfig.maxSpeedPercent = 40;
+/*
+  posLeftConfig.pFactor100 = 1000;
   posLeftConfig.iFactor100 = 2;
   posLeftConfig.dFactor100 = 50;
   posLeftConfig.iAntiWindup = 200;
   posLeftConfig.maxSpeedPercent = 40;
-
+*/
   posLeftConfig.lastError = 0;
   posLeftConfig.integral = 0;
   posRightConfig.pFactor100 = posLeftConfig.pFactor100;

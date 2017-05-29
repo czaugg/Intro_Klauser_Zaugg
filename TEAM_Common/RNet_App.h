@@ -14,8 +14,8 @@
 
 /*! \todo Assign proper addresses */
 #define APP_RNET_ADDR_TIME_SYSTEM   0xff  /* RNet address of time taking system */
-#define APP_RNET_ADDR_ROBOT         0xff  /* RNet address of robot */
-#define APP_RNET_ADDR_REMOTE        0xff  /* RNet address of remote controller */
+#define APP_RNET_ADDR_ROBOT         0xae  /* RNet address of robot */
+#define APP_RNET_ADDR_REMOTE        0xae  /* RNet address of remote controller */
 
 #if PL_CONFIG_HAS_SHELL
   #include "CLS1.h"

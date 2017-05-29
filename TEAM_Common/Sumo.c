@@ -19,11 +19,13 @@
 
 #define DIR_LEFT 1
 #define DIR_RIGHT 2
-#define SPEED 2500
-#define MAXSPEED 2000
+#define SPEED 4000
+#define MAXSPEED 10000
 #define TURN 0.7f
+#define TASKMS 10
 #define ESCAPE_TURN_ANGLE 130
-bool handleLine = FALSE;
+bool handleLine = TRUE;
+
 
 typedef enum {
   SUMO_STATE_IDLE,
@@ -45,6 +47,7 @@ typedef enum {
 	SUMO_TURN_LEFT,
 	SUMO_TURN_RIGHT
 } SUMO_Turn_t;
+SUMO_Turn_t StartTurn = SUMO_TURN_LEFT;
 
 typedef enum {
 	OPP_LOST,
@@ -66,12 +69,22 @@ static TaskHandle_t sumoTaskHndl;
 #define SUMO_RUN		(1<<5)
 #define SUMO_ALL_FLAGS  (0xFFFF)
 
+
+static void SumoCountdown(void){
+	uint8_t i;
+	for (i = 0; i < 5; i++){
+		BUZ_Beep(500,200);
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
 static bool SUMO_IsRunningSumo(void) {
   return sumoState!=SUMO_STATE_IDLE;
 }
 
 void SUMO_StartSumo(void) {
-  (void)xTaskNotify(sumoTaskHndl, SUMO_START_SUMO, eSetBits);
+	SumoCountdown();
+    (void)xTaskNotify(sumoTaskHndl, SUMO_START_SUMO, eSetBits);
 }
 
 void SUMO_StopSumo(void) {
@@ -80,8 +93,9 @@ void SUMO_StopSumo(void) {
 
 void SUMO_StartStopSumo(void) {
   if (SUMO_IsRunningSumo()) {
-    (void)xTaskNotify(sumoTaskHndl, SUMO_STOP_SUMO, eSetBits);
+      (void)xTaskNotify(sumoTaskHndl, SUMO_STOP_SUMO, eSetBits);
   } else {
+	 SumoCountdown();
     (void)xTaskNotify(sumoTaskHndl, SUMO_START_SUMO, eSetBits);
   }
 }
@@ -122,9 +136,6 @@ static bool SumoEscapeLine(SUMO_Turn_t turn){
 		TURN_TurnAngle(-ESCAPE_TURN_ANGLE, NULL);
 		line = TRUE;
 	}
-
-	SUMO_StartSumo();
-	(void)xTaskNotifyWait(0UL, SUMO_ALARM_LINE|SUMO_LINE_LEFT|SUMO_LINE_RIGHT, &notify, 0); /* check flags */
 	return line;
 }
 
@@ -182,33 +193,55 @@ static OPP_POS_t SumoSearch(void) {
 	if (left != 0xFFFF){
 		if (right != 0xFFFF){
 			opp = OPP_CENTER;
+			LED_On(1);
+			LED_On(2);
 		} else {
 			opp = OPP_LEFT;
+			LED_On(1);
+			LED_Off(2);
 		}
 	} else {
 		if (right != 0xFFFF){
 			opp = OPP_RIGHT;
+			LED_On(2);
+			LED_Off(1);
 		} else {
 			opp = OPP_LOST;
+			LED_Off(1);
+			LED_Off(2);
 		}
 	}
 	return opp;
 }
 
-static void SumoCountdown(void){
-	uint8_t i;
-	for (i = 0; i < 5; i++){
-		BUZ_Beep(500,200);
-		vTaskDelay(pdMS_TO_TICKS(1000));
-	}
-}
+static SUMO_Turn_t SumoFindOpp(SUMO_Turn_t turn){
+	static uint16_t count = 0;
+	SUMO_Turn_t newTurn = turn;
+	DRV_SetMode(DRV_MODE_SPEED);
 
-static void SumoFindOpp(SUMO_Turn_t turn){
 	if (turn == SUMO_TURN_LEFT){
-		TURN_TurnAngle(-10, NULL);
+		DRV_SetSpeed(-SPEED, SPEED);
+		count++;
+		if (count >= (1000 / TASKMS)) {
+			count = 0;
+			newTurn = SUMO_TURN_NOT;
+		}
+	} else if (turn == SUMO_TURN_RIGHT) {
+		DRV_SetSpeed(SPEED, -SPEED);
+		count++;
+		if (count >= (1000 / TASKMS)) {
+			count = 0;
+			newTurn = SUMO_TURN_NOT;
+		}
 	} else {
-		TURN_TurnAngle(10, NULL);
+		DRV_SetSpeed(2*SPEED, 2*SPEED);
+		count++;
+		if (count >= (1000 / TASKMS)) {
+			count = 0;
+			newTurn = SUMO_TURN_LEFT;
+		}
 	}
+	return newTurn;
 }
 
 static void SumoAttack(OPP_POS_t opp){
@@ -240,8 +273,13 @@ static void SumoFSM_Attack(void){
 			SumoEscapeLine(turn);
 			sumoState = SUMO_STATE_SEARCHING;
 			opp = OPP_LOST;
+			BUZ_Beep(1000,1000);
 		}
 	}
+
+	/* Get Flags */
+	(void) xTaskNotifyWait(0UL, SUMO_START_SUMO | SUMO_STOP_SUMO | SUMO_ALARM_LINE, &notify, 0); /* check flags */
+
 
 	  /* Check Stop Flag */
 	  if (notify & SUMO_STOP_SUMO) {
@@ -249,29 +287,27 @@ static void SumoFSM_Attack(void){
 	     sumoState = SUMO_STATE_IDLE;
 	  }
 
-	/* Get Flags */
-	(void) xTaskNotifyWait(0UL, SUMO_START_SUMO | SUMO_STOP_SUMO | SUMO_ALARM_LINE, &notify, 0); /* check flags */
-
 	/* State Machine */
 	for (;;) { /* breaks */
 		switch (sumoState) {
 		case SUMO_STATE_IDLE:
 			if ((notify & SUMO_START_SUMO)) {
-				sumoState = SUMO_STATE_COUNTDOWN;
+				sumoState = SUMO_STATE_SEARCHING;
 				break; /* handle next state */
 			}
 			return;
-		case SUMO_STATE_COUNTDOWN:
+/*		case SUMO_STATE_COUNTDOWN:
 			SumoCountdown();
 			sumoState = SUMO_STATE_SEARCHING;
-			break;
+			break;*/
 		case SUMO_STATE_SEARCHING:
 			opp = SumoSearch();
 			if (opp == OPP_LOST){
-				SumoFindOpp(SUMO_TURN_LEFT);
+				StartTurn = SumoFindOpp(StartTurn);
 				return;
 			} else {
 				sumoState = SUMO_STATE_ATTACK;
+				BUZ_Beep(500,200);
 				DRV_SetMode(DRV_MODE_SPEED);
 				break;
 			}
@@ -281,10 +317,12 @@ static void SumoFSM_Attack(void){
 				SumoAttack(opp);
 			} else {
 				sumoState = SUMO_STATE_SEARCHING;
+				BUZ_Beep(1000, 200);
 				break;
 			}
 			return;
 		default: /* should not happen? */
+			sumoState = SUMO_STATE_IDLE;
 			return;
 		} /* switch */
 	} /* for */
@@ -331,13 +369,29 @@ uint8_t SUMO_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_St
   } else if (UTIL1_strcmp((char*)cmd, CLS1_CMD_STATUS)==0 || UTIL1_strcmp((char*)cmd, "sumo status")==0) {
     *handled = TRUE;
     return SUMO_PrintStatus(io);
-  } else if (UTIL1_strcmp(cmd, "sumo start")==0) {
+  } else if (UTIL1_strcmp(cmd, "sumo startt")==0) {
     *handled = TRUE;
     SUMO_StartSumo();
-  } else if (UTIL1_strcmp(cmd, "sumo stop")==0) {
+  } else if (UTIL1_strcmp(cmd, "sumo stopp")==0) {
     *handled = TRUE;
     SUMO_StopSumo();
-  }
+  } else if (UTIL1_strcmp(cmd, "sumo line")==0) {
+	*handled = TRUE;
+	handleLine = TRUE;
+	} else if (UTIL1_strcmp(cmd, "sumo noline") == 0) {
+		*handled = TRUE;
+		handleLine = FALSE;
+	} else if (UTIL1_strcmp(cmd, "sumo left") == 0) {
+		*handled = TRUE;
+		StartTurn = SUMO_TURN_LEFT;
+	} else if (UTIL1_strcmp(cmd, "sumo right") == 0) {
+		*handled = TRUE;
+		StartTurn = SUMO_TURN_RIGHT;
+	} else if (UTIL1_strcmp(cmd, "sumo center") == 0) {
+		*handled = TRUE;
+		StartTurn = SUMO_TURN_NOT;
+	}
+
   return ERR_OK;
 }
 

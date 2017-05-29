@@ -156,7 +156,7 @@ int main(void)
 
   /* Write your code here */
 
-  xTaskCreate(EventHandlerTask, "Events", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 1, (void*) NULL);
+  xTaskCreate(EventHandlerTask, "Events", configMINIMAL_STACK_SIZE, (void*) NULL, tskIDLE_PRIORITY + 3, (void*) NULL);
   APP_Start();
 
   /* For example: for(;;) { } *
